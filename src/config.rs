@@ -54,6 +54,11 @@ pub struct Config {
     pub description: String,
     #[serde(default)]
     pub footnote: String,
+    /// Optional path/URL to a profile image shown on the home page. Absent
+    /// (the default) omits the avatar image; the social links still render,
+    /// just without the avatar's reserved space.
+    #[serde(default)]
+    pub avatar: String,
     #[serde(default)]
     pub social: SocialLinks,
     #[serde(default)]

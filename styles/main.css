@@ -258,6 +258,14 @@ footer {
 }
 .social-links a:hover { color: var(--tx); }
 .social-links svg { width: 16px; height: 16px; }
+.profile.no-avatar {
+  display: block;
+  padding-left: 0;
+}
+.profile.no-avatar .social-links {
+  position: static;
+  flex-direction: row;
+}
 .avatar {
   width: 128px;
   height: 128px;
