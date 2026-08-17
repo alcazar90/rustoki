@@ -63,8 +63,7 @@ cargo clippy
 ## Credits
 
 The default color palette is [Flexoki](https://github.com/kepano/flexoki) by
-[Steph Ango](https://stephango.com/flexoki), used under the MIT License. See
-[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for the full license text.
+[Steph Ango](https://stephango.com/flexoki), used under the MIT License. 
 
 ## License
 
