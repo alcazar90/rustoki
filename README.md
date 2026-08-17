@@ -2,7 +2,7 @@
 
 A small, opinionated static site generator written in Rust. Markdown in,
 static HTML out — with syntax highlighting, LaTeX math, figures, a
-bibliography system, and a Flexoki-themed default look baked in.
+bibliography system, and a [Flexoki](https://github.com/kepano/flexoki)-[themed](https://stephango.com/about#colophon) default look baked in.
 
 Built to power a single personal blog; extracted here so the generator can be
 installed and reused independently of that blog's content.
