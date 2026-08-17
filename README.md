@@ -7,6 +7,8 @@ bibliography system, and a [Flexoki](https://github.com/kepano/flexoki)-[themed]
 Built to power a single personal blog; extracted here so the generator can be
 installed and reused independently of that blog's content.
 
+![A rendered post page: syntax-highlighted code, LaTeX math, and a numbered references section, in Flexoki's dark theme](example/screenshots/post.png)
+
 ## Usage
 
 Run these from the root of a site directory (one containing `content/`):
@@ -51,6 +53,27 @@ cargo install --path /path/to/rustoky --locked
 Templates and CSS are compiled into the binary (`include_str!`) — there's no
 runtime template loading or per-site theming. If you want a different look,
 fork this repo.
+
+## Example
+
+`example/` is a small demo site (config, two posts, a page, a bibliography
+sidecar) used to exercise and preview the generator. Build and serve it the
+same way you would any other site, pointing `cargo run` at this repo's
+manifest:
+
+```sh
+cd example
+cargo run --manifest-path ../Cargo.toml --release -- serve --port 8123
+```
+
+Then open `http://127.0.0.1:8123/`. The home page lists both demo posts:
+
+![The demo site's home page: title, description, and a list of posts, in Flexoki's dark theme](example/screenshots/home.png)
+
+`example/content/config.toml` shows the minimal config needed to get a site
+running — title, url, author, description, and a menu. `avatar` and
+`[social]` are both optional; leaving them out (as the example does) drops
+the avatar image and lays the social-links row out without it.
 
 ## Development
 

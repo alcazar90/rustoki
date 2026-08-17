@@ -1,0 +1,13 @@
+title = "Rustoky Demo"
+url = "https://example.com"
+author = "Ada Lovelace"
+description = "A demo site showing off rustoky's default look and features."
+footnote = "Built with rustoky."
+
+[[menu]]
+name = "Posts"
+url = "/"
+
+[[menu]]
+name = "About"
+url = "/about"

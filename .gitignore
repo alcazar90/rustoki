@@ -1,6 +1,11 @@
 /target/
 **/*.rs.bk
 
+# Example site build output (see example/) — screenshots under
+# example/screenshots/ are committed, the rendered site itself is not.
+/example/public/
+/example/.image-cache/
+
 # Editor
 *.swp
 .idea/

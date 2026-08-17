@@ -47,6 +47,7 @@ There is no lint/format CI step defined in this repo beyond `cargo test`; use `c
 - `src/` — all production logic (single binary crate, `[[bin]] name = "rustoky"`).
 - `templates/*.html` — minijinja templates, baked into the binary via `include_str!` (not read from disk at runtime).
 - `styles/main.css` — single stylesheet, inlined into every page's `<head>` at build time via `include_str!` (no external CSS request, no separate CSS file ships in `public/`).
+- `example/` — a small demo site (its own `content/`) used to preview the generator and produce the screenshots in `README.md`. Not part of the crate; run against it with `cargo run --manifest-path ../Cargo.toml -- serve` from inside `example/`.
 
 At runtime (i.e. in whatever site directory the binary is run from), it expects:
 - `content/config.toml` (site config), `content/posts/*.md`, `content/pages/*.md`, `content/static/` (copied verbatim to `public/`).
@@ -56,7 +57,7 @@ At runtime (i.e. in whatever site directory the binary is run from), it expects:
 
 `main.rs` orchestrates the whole build:
 
-1. Load `content/config.toml` (`config.rs`) — flat schema, one struct, no nesting. Includes optional `[giscus]` block for comments (present/absent toggles whether post pages render a giscus mount).
+1. Load `content/config.toml` (`config.rs`) — flat schema, one struct, no nesting. `avatar` is an optional path/URL to a profile image on the home page; leaving it unset omits the image and lays out the social-links row without the space reserved for it (see `index.html`'s `.no-avatar` branch). Includes optional `[giscus]` block for comments (present/absent toggles whether post pages render a giscus mount).
 2. Walk `content/posts/` and `content/pages/` (`content.rs`) — parses both `---` YAML and `+++` TOML frontmatter leniently (real-world content tends to have inconsistent shapes like `slug: []` or `tags: "single"`), skips drafts, sorts by date descending. Files under `pages/` become `SourceKind::Page`, everything else is a `Post`.
 3. Render each source through the Markdown pipeline (`render/mod.rs`), which walks `pulldown-cmark`'s event stream and intercepts:
    - **Headings** → auto `id=` anchors + collected into a Table of Contents (rendered inline as a `<nav class="toc">` block if a post has ≥2 headings).
