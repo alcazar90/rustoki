@@ -1,6 +1,6 @@
-//! `rustoky` — a Rust static site generator with a Flexoki-themed default look.
+//! `rustoki` — a Rust static site generator with a Flexoki-themed default look.
 //!
-//! `rustoky build` is the core subcommand (`serve` and `new-post` build on top
+//! `rustoki build` is the core subcommand (`serve` and `new-post` build on top
 //! of it). Run from a site's root directory, it loads `content/config.toml`,
 //! walks `content/posts/` and `content/pages/`, renders each markdown source
 //! through the pulldown-cmark → syntect/pulldown-latex pipeline, wraps the
@@ -47,7 +47,7 @@ fn main() -> ExitCode {
             match parse_port(&rest) {
                 Ok(port) => cmd_serve(include_drafts, port),
                 Err(e) => {
-                    eprintln!("rustoky: {e}");
+                    eprintln!("rustoki: {e}");
                     return ExitCode::from(2);
                 }
             }
@@ -57,14 +57,14 @@ fn main() -> ExitCode {
             match title {
                 Some(t) if !t.trim().is_empty() => cmd_new_post(&t),
                 _ => {
-                    eprintln!("rustoky: new-post requires a non-empty title argument");
-                    eprintln!("usage: rustoky new-post \"<title>\"");
+                    eprintln!("rustoki: new-post requires a non-empty title argument");
+                    eprintln!("usage: rustoki new-post \"<title>\"");
                     return ExitCode::from(2);
                 }
             }
         }
         Some(other) => {
-            eprintln!("rustoky: unknown subcommand '{other}'");
+            eprintln!("rustoki: unknown subcommand '{other}'");
             usage();
             return ExitCode::from(2);
         }
@@ -77,15 +77,15 @@ fn main() -> ExitCode {
     match result {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("rustoky: error: {e:#}");
+            eprintln!("rustoki: error: {e:#}");
             ExitCode::FAILURE
         }
     }
 }
 
 fn usage() {
-    eprintln!("rustoky v{}", env!("CARGO_PKG_VERSION"));
-    eprintln!("usage: rustoky <build [--drafts] | serve [--drafts] [--port <n>] | new-post \"<title>\">");
+    eprintln!("rustoki v{}", env!("CARGO_PKG_VERSION"));
+    eprintln!("usage: rustoki <build [--drafts] | serve [--drafts] [--port <n>] | new-post \"<title>\">");
     eprintln!();
     eprintln!("  build              Render content/ to public/.");
     eprintln!("    --drafts         Also render draft: true posts, for local preview.");

@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`rustoky` — a standalone Rust static site generator (not a Cargo workspace,
+`rustoki` — a standalone Rust static site generator (not a Cargo workspace,
 one binary crate) that reads Markdown content and renders it to static HTML.
 It was extracted from a personal blog's repo so the generator can be
 installed and reused independently of any one site's content. It ships with
 one baked-in Flexoki-themed look — see "Design principles" below for what
 that means for extending it.
 
-A site that uses `rustoky` supplies a `content/` directory (config, posts,
+A site that uses `rustoki` supplies a `content/` directory (config, posts,
 pages, static assets) and runs the installed binary against it; this repo
 owns no content of its own.
 
@@ -44,7 +44,7 @@ There is no lint/format CI step defined in this repo beyond `cargo test`; use `c
 
 ## Layout
 
-- `src/` — all production logic (single binary crate, `[[bin]] name = "rustoky"`).
+- `src/` — all production logic (single binary crate, `[[bin]] name = "rustoki"`).
 - `templates/*.html` — minijinja templates, baked into the binary via `include_str!` (not read from disk at runtime).
 - `styles/main.css` — single stylesheet, inlined into every page's `<head>` at build time via `include_str!` (no external CSS request, no separate CSS file ships in `public/`).
 - `example/` — a small demo site (its own `content/`) used to preview the generator and produce the screenshots in `README.md`. Not part of the crate; run against it with `cargo run --manifest-path ../Cargo.toml -- serve` from inside `example/`.

@@ -1,11 +1,11 @@
 ---
-title: "Hello, Rustoky"
+title: "Hello, Rustoki"
 date: 2024-01-15
-description: "A short tour of what rustoky renders out of the box: code, math, and citations."
-tags: ["demo", "rustoky"]
+description: "A short tour of what rustoki renders out of the box: code, math, and citations."
+tags: ["demo", "rustoki"]
 ---
 
-Rustoky turns Markdown into static HTML, with a few things handled for you
+Rustoki turns Markdown into static HTML, with a few things handled for you
 along the way: syntax highlighting, LaTeX math, and a citation system. This
 post is a short tour.
 

@@ -136,7 +136,7 @@ fn get_or_fetch(id: &str, cache: &mut Cache, dirty: &mut bool) -> Option<Tweet> 
         }
         Err(e) => {
             eprintln!(
-                "rustoky: warning: couldn't fetch tweet {id} ({e}); leaving raw embed markup"
+                "rustoki: warning: couldn't fetch tweet {id} ({e}); leaving raw embed markup"
             );
             None
         }

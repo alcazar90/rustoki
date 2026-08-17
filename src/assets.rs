@@ -108,12 +108,12 @@ pub fn optimize(static_root: &Path, cache_root: &Path) -> (ImageManifest, Optimi
     let have_gif2webp = tool_available("gif2webp");
     if !have_cwebp {
         eprintln!(
-            "rustoky: warning: `cwebp` not found on PATH; shipping unoptimized images. \
+            "rustoki: warning: `cwebp` not found on PATH; shipping unoptimized images. \
              Install it with `brew install webp` or `apt-get install -y webp`."
         );
     }
     if !have_gif2webp {
-        eprintln!("rustoky: warning: `gif2webp` not found on PATH; GIFs will ship unoptimized.");
+        eprintln!("rustoki: warning: `gif2webp` not found on PATH; GIFs will ship unoptimized.");
     }
     if !have_cwebp && !have_gif2webp {
         return (manifest, report);
@@ -157,13 +157,13 @@ pub fn optimize(static_root: &Path, cache_root: &Path) -> (ImageManifest, Optimi
         if !fresh {
             if let Some(parent) = out.parent() {
                 if let Err(e) = std::fs::create_dir_all(parent) {
-                    eprintln!("rustoky: warning: creating {}: {e}", parent.display());
+                    eprintln!("rustoki: warning: creating {}: {e}", parent.display());
                     report.skipped += 1;
                     continue;
                 }
             }
             if let Err(e) = encode(&src, &out, is_gif) {
-                eprintln!("rustoky: warning: optimizing {}: {e}", src.display());
+                eprintln!("rustoki: warning: optimizing {}: {e}", src.display());
                 let _ = std::fs::remove_file(&out);
                 report.skipped += 1;
                 continue;
@@ -191,7 +191,7 @@ pub fn optimize(static_root: &Path, cache_root: &Path) -> (ImageManifest, Optimi
         let Ok(dims) = imagesize::size(&out) else {
             // Unreadable output — leave no stamp, so this retries next build
             // instead of caching a failure.
-            eprintln!("rustoky: warning: couldn't read dimensions of {}", out.display());
+            eprintln!("rustoki: warning: couldn't read dimensions of {}", out.display());
             let _ = std::fs::remove_file(&out);
             report.skipped += 1;
             continue;
