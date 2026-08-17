@@ -43,7 +43,10 @@ that can be resolved at build time is deferred to the reader's browser.
 Run these from the root of a site directory (one containing `content/`):
 
 ```sh
-# Install the binary from this repo
+# Install a specific tagged release (recommended — see Releasing below)
+cargo install --git https://github.com/alcazar90/rustoky --tag v0.1.0 --locked
+
+# Or track the default branch instead of a pinned release
 cargo install --git https://github.com/alcazar90/rustoky --locked
 
 # Build content/ -> public/
@@ -111,6 +114,30 @@ cargo test
 cargo fmt
 cargo clippy
 ```
+
+### Releasing
+
+`Cargo.toml`'s `version` is the only source of truth — no changelog file,
+no release tooling. To cut a release:
+
+```sh
+# 1. Bump `version` in Cargo.toml, commit it
+git commit -am "chore: bump version to 0.2.0"
+
+# 2. Tag it
+git tag -a v0.2.0 -m "v0.2.0"
+git push origin main --tags
+
+# 3. In a consuming site, pin to the new tag
+cargo install --git https://github.com/alcazar90/rustoky --tag v0.2.0 --locked
+```
+
+Pre-1.0, don't over-think semver strictness: bump the middle number for any
+notable change (feature or breaking), the last for trivial fixes. A
+consuming site should always pin `--tag`, never track a branch — that way
+shipping a new rustoky feature is a deliberate one-line version bump in that
+site's own repo, not something that happens silently on its next unrelated
+deploy.
 
 ## Credits
 
