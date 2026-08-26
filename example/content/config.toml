@@ -2,7 +2,7 @@ title = "Rustoki Demo"
 url = "https://example.com"
 author = "Ada Lovelace"
 description = "A demo site showing off rustoki's default look and features."
-footnote = "Built with rustoki."
+footnote = 'Built with <a href="https://github.com/alcazar90/rustoki">rustoki</a>.'
 
 [[menu]]
 name = "Posts"
