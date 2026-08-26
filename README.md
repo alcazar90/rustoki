@@ -1,7 +1,7 @@
 # rustoki
 
 A small, opinionated static site generator written in Rust. Markdown in,
-static HTML out—with syntax highlighting, LaTeX math, figures, a
+static HTML out—with syntax highlighting, LaTeX math, figures, sidenotes, a
 bibliography system, and a [Flexoki](https://github.com/kepano/flexoki)-[themed](https://stephango.com/about#colophon) default look baked in.
 
 Built to power a single personal blog; extracted here so the generator can be
@@ -83,6 +83,17 @@ cargo install --path /path/to/rustoki --locked
 - Optional `content/posts/<post-stem>.refs.yaml` bibliography sidecars for
   `\cite{key}`/`\citep{key}`.
 - Optional `[margin]` block for the margin figure (see below).
+
+Footnotes need no configuration. Write one as LaTeX `\footnote{...}` — a
+manuscript converted to Markdown needs no editing on that score — or as an
+ordinary CommonMark footnote (`[^key]` with a `[^key]: ...` definition
+anywhere in the file). Both render as **sidenotes**: a numbered mark in the
+text, and the note itself typeset in the right margin, level with the line
+that refers to it. Below roughly 1150px there is no margin to put it in, so
+the mark becomes a toggle and the note opens inline — a checkbox does the
+work, so there is no script and no `#fragment` to scroll the page. A note is
+ordinary content and can hold math, links or a citation of its own; it cannot
+hold a block element such as display math or a code block.
 
 Templates and CSS are compiled into the binary (`include_str!`) — there's no
 runtime template loading or per-site theming. If you want a different look,
