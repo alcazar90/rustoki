@@ -60,6 +60,10 @@ pub struct RenderEnv<'a> {
     pub site: &'a Config,
     pub inline_css: &'a str,
     pub year: i32,
+    /// The margin figure's atlas, stage and runtime, or `None` when the site
+    /// has no `[margin]` block. Held on the shared env rather than per page
+    /// kind so every page carries it identically.
+    pub margin: Option<&'a crate::margin::Margin>,
 }
 
 /// Full context handed to `render_post`.
@@ -129,6 +133,9 @@ impl Templates {
             site => ctx.env.site,
             inline_css => ctx.env.inline_css,
             year => ctx.env.year,
+            margin_atlas => ctx.env.margin.map(|m| m.atlas.as_str()).unwrap_or(""),
+            margin_stage => ctx.env.margin.map(|m| m.stage.as_str()).unwrap_or(""),
+            margin_script => ctx.env.margin.map(|m| m.script.as_str()).unwrap_or(""),
             page_title => format!("{} — {}", ctx.post.title, ctx.env.site.title),
             description => ctx.post.description,
             lang => ctx.post.lang,
@@ -148,6 +155,9 @@ impl Templates {
             site => ctx.env.site,
             inline_css => ctx.env.inline_css,
             year => ctx.env.year,
+            margin_atlas => ctx.env.margin.map(|m| m.atlas.as_str()).unwrap_or(""),
+            margin_stage => ctx.env.margin.map(|m| m.stage.as_str()).unwrap_or(""),
+            margin_script => ctx.env.margin.map(|m| m.script.as_str()).unwrap_or(""),
             page_title => format!("{} — {}", ctx.page.title, ctx.env.site.title),
             description => ctx.page.description,
             lang => ctx.page.lang,
@@ -169,6 +179,9 @@ impl Templates {
             site => ctx.env.site,
             inline_css => ctx.env.inline_css,
             year => ctx.env.year,
+            margin_atlas => ctx.env.margin.map(|m| m.atlas.as_str()).unwrap_or(""),
+            margin_stage => ctx.env.margin.map(|m| m.stage.as_str()).unwrap_or(""),
+            margin_script => ctx.env.margin.map(|m| m.script.as_str()).unwrap_or(""),
             page_title => ctx.env.site.title.clone(),
             description => ctx.env.site.description.clone(),
             lang => "en",
@@ -188,6 +201,9 @@ impl Templates {
             site => ctx.env.site,
             inline_css => ctx.env.inline_css,
             year => ctx.env.year,
+            margin_atlas => ctx.env.margin.map(|m| m.atlas.as_str()).unwrap_or(""),
+            margin_stage => ctx.env.margin.map(|m| m.stage.as_str()).unwrap_or(""),
+            margin_script => ctx.env.margin.map(|m| m.script.as_str()).unwrap_or(""),
             page_title => format!("404 — {}", ctx.env.site.title),
             description => "Page not found.",
             lang => "en",
@@ -221,6 +237,7 @@ mod tests {
                 },
             ],
             giscus: None,
+            margin: None,
         }
     }
 
@@ -250,6 +267,7 @@ mod tests {
                 site: &cfg,
                 inline_css: css,
                 year: 2026,
+                margin: None,
             },
             post,
         };
@@ -283,6 +301,7 @@ mod tests {
                     site: &cfg,
                     inline_css: "",
                     year: 2026,
+                    margin: None,
                 },
                 post,
             })
@@ -314,6 +333,7 @@ mod tests {
                     site: &cfg,
                     inline_css: "",
                     year: 2026,
+                    margin: None,
                 },
                 posts: &[],
             })
@@ -333,6 +353,7 @@ mod tests {
                 site: &cfg,
                 inline_css: "",
                 year: 2026,
+                margin: None,
             },
             post: fixture_post(),
         };
@@ -367,6 +388,7 @@ mod tests {
                 site: &cfg,
                 inline_css: "",
                 year: 2026,
+                margin: None,
             },
             page,
         };
@@ -398,6 +420,7 @@ mod tests {
                 site: &cfg,
                 inline_css: "",
                 year: 2026,
+                margin: None,
             },
             post: fixture_post(),
         };
@@ -422,6 +445,7 @@ mod tests {
                 site: &cfg,
                 inline_css: "",
                 year: 2026,
+                margin: None,
             },
             post: fixture_post(),
         };
@@ -464,6 +488,7 @@ mod tests {
             site: &cfg,
             inline_css: "",
             year: 2026,
+            margin: None,
         };
         let posts = vec![
             PostListEntry {
@@ -515,6 +540,7 @@ mod tests {
             site: &cfg,
             inline_css: "",
             year: 2026,
+            margin: None,
         };
         let ctx = IndexContext {
             env,
@@ -534,6 +560,7 @@ mod tests {
             site: &cfg,
             inline_css: "",
             year: 2026,
+            margin: None,
         };
         let ctx = Render404Context { env };
         let html = templates.render_404(&ctx).unwrap();

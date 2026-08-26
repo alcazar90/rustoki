@@ -1,0 +1,101 @@
+
+/* The margin figure. Appended to the inlined stylesheet only when a site
+ * configures [margin]. Atmosphere is theme-owned and load-bearing, not
+ * decorative — see src/margin/mod.rs for why each hour gets exactly one. */
+:root {
+  --mg-shadow: 1;   /* raking shadow, day only */
+  --mg-aura:   0;   /* lantern pool, night only */
+  --mg-prop:   1;
+}
+[data-theme="dark"] {
+  --mg-shadow: 0;
+  --mg-aura:   1;
+  --mg-prop:  .12;  /* near-invisible until his lantern reaches it */
+}
+
+#mg {
+  position: fixed;
+  bottom: 0;
+  z-index: 0;
+  pointer-events: none;
+  /* Deliberately not overflow:hidden. The lantern pool is wider than the stage
+   * and clipping it draws a visible rectangle; the figure is already at zero
+   * opacity before it leaves the top, and the viewport edge handles the
+   * bottom, so there is nothing left for a clip to do except damage. */
+  /* Anchored off the centred column, so it tracks the text at any width. */
+  left: calc(50% - var(--mg-half) - var(--mg-w) - var(--mg-gap));
+  width: var(--mg-w);
+  height: var(--mg-h);
+}
+#mg .mg-fig, #mg .mg-aura {
+  position: absolute;
+  bottom: 0;
+  will-change: transform;
+  /* Durations are set per beat by the runtime. Only these two properties ever
+   * animate, so a crossing never touches layout or paint. */
+  transition: transform 0s linear, opacity .9s linear;
+}
+/* An explicit box, because the shadow is sized off the figure and the frames
+ * inside are all absolutely positioned — without it the box collapses. */
+#mg .mg-fig  { left: var(--mg-x); z-index: 3; width: var(--mg-fw); height: var(--mg-fh); }
+/* Between crossings the figure and its light go away but the prop does not:
+ * a thing that is only there while someone is looking at it is an animation
+ * container, not a place. Nothing is left with a compositing layer. */
+#mg.mg-idle .mg-fig, #mg.mg-idle .mg-aura { display: none; }
+#mg .mg-aura { left: var(--mg-x); z-index: 1; width: 0; height: 0; }
+#mg .mg-fr   { position: absolute; left: 0; bottom: 0; shape-rendering: crispEdges; opacity: 0; }
+#mg .mg-w0   { opacity: 1; }
+
+#mg .mg-prop {
+  position: absolute;
+  z-index: 2;
+  left: var(--mg-px);
+  bottom: var(--mg-py);
+  opacity: var(--mg-prop);
+  transition: opacity 1.6s ease-out;
+  shape-rendering: crispEdges;
+}
+#mg.mg-lit .mg-prop { opacity: 1; }
+
+/* Day. */
+#mg .mg-shadow {
+  position: absolute;
+  left: 10%;
+  bottom: 2%;
+  width: 220%;
+  height: 36%;
+  opacity: var(--mg-shadow);
+  transform: translateX(-6%) skewX(-38deg);
+  background: radial-gradient(ellipse at 32% 50%, rgba(60,52,40,.33), rgba(60,52,40,0) 68%);
+}
+/* Night: one pool, on the ground beneath the lantern. */
+#mg .mg-aura i {
+  position: absolute;
+  left: var(--mg-lx);
+  bottom: var(--mg-ly);
+  width: var(--mg-lw);
+  height: var(--mg-lh);
+  display: block;
+  transform: translate(-50%, 50%);
+  opacity: var(--mg-aura);
+  background: radial-gradient(ellipse at 50% 50%,
+    rgba(245,206,122,.34), rgba(245,206,122,.11) 40%, rgba(245,206,122,0) 70%);
+}
+
+/* Two frames plus a one-pixel bob is the whole gait. The bob rides inside the
+ * frame swap: two animations on one element would cancel. */
+#mg.mg-walk .mg-w0 { animation: mg-a var(--mg-step) steps(1) infinite; }
+#mg.mg-walk .mg-w1 { animation: mg-b var(--mg-step) steps(1) infinite; }
+@keyframes mg-a {
+  0%, 49.9% { opacity: 1; transform: translateY(0); }
+  50%, 100% { opacity: 0; transform: translateY(calc(var(--mg-unit) * -1)); }
+}
+@keyframes mg-b {
+  0%, 49.9% { opacity: 0; transform: translateY(0); }
+  50%, 100% { opacity: 1; transform: translateY(calc(var(--mg-unit) * -1)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #mg.mg-walk .mg-w0, #mg.mg-walk .mg-w1 { animation: none; }
+  #mg .mg-fig, #mg .mg-aura { transition: none; }
+}

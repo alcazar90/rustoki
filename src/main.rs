@@ -18,6 +18,7 @@ mod assets;
 mod config;
 mod content;
 mod feed;
+mod margin;
 mod render;
 mod serve;
 mod templates;
@@ -160,10 +161,35 @@ fn cmd_build(include_drafts: bool) -> Result<()> {
 
     let templates = Templates::new().context("initializing minijinja environment")?;
     let year = current_year();
+
+    // The margin figure is opt-in and self-disabling: a site without a
+    // [margin] block, or with one the cast can't satisfy, gets an untouched
+    // stylesheet and no extra bytes on any page.
+    let margin = config.margin.as_ref().and_then(margin::build);
+    let inline_css = match &margin {
+        Some(m) => format!("{MAIN_CSS}{}", m.css),
+        None => MAIN_CSS.to_string(),
+    };
+    if let Some(m) = &margin {
+        let routines: Vec<String> = m
+            .routines
+            .iter()
+            .map(|(name, ms)| format!("{name} {:.1}s", *ms as f64 / 1000.0))
+            .collect();
+        println!(
+            "  margin figure: {} — {} B atlas, min {}px wide, {}",
+            m.character,
+            m.atlas.len(),
+            m.min_width,
+            routines.join(", ")
+        );
+    }
+
     let env = RenderEnv {
         site: &config,
-        inline_css: MAIN_CSS,
+        inline_css: &inline_css,
         year,
+        margin: margin.as_ref(),
     };
 
     // Fresh build: blow away public/ so we don't accumulate stale output.
@@ -622,6 +648,7 @@ impl<'a> RenderEnv<'a> {
             site: self.site,
             inline_css: self.inline_css,
             year: self.year,
+            margin: self.margin,
         }
     }
 }

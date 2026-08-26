@@ -32,6 +32,60 @@ pub struct GiscusConfig {
     pub loading: String,
 }
 
+/// Optional margin-figure configuration. Present enables the pixel traveller
+/// who crosses the side gutter; absent ships none of it — no atlas, no
+/// stylesheet, no script. Every field has a default, so `[margin]` on its own
+/// is a complete configuration.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct MarginConfig {
+    /// Which cast member to draw. See `margin::cast::CAST` for the names an
+    /// unknown value is reported against.
+    #[serde(default = "default_character")]
+    pub character: String,
+    /// CSS pixels per sprite pixel. Fractional is fine and stays crisp on the
+    /// 2x displays this is mostly seen on.
+    #[serde(default = "default_scale")]
+    pub scale: f32,
+    /// Narrowest viewport that still has gutter for the figure. Defaults to
+    /// whatever the chosen character at the chosen scale actually needs, which
+    /// is nearly always the right answer.
+    #[serde(default)]
+    pub min_width: Option<u32>,
+    /// Seconds before the first crossing. Long enough that it never reads as
+    /// part of the page arriving.
+    #[serde(default = "default_first_delay")]
+    pub first_delay: u32,
+    /// Seconds between crossings, picked uniformly from this range so it never
+    /// syncs to scrolling or to itself.
+    #[serde(default = "default_interval")]
+    pub interval: [u32; 2],
+}
+
+fn default_character() -> String {
+    "traveller".to_string()
+}
+fn default_scale() -> f32 {
+    2.5
+}
+fn default_first_delay() -> u32 {
+    90
+}
+fn default_interval() -> [u32; 2] {
+    [240, 420]
+}
+
+impl Default for MarginConfig {
+    fn default() -> Self {
+        Self {
+            character: default_character(),
+            scale: default_scale(),
+            min_width: None,
+            first_delay: default_first_delay(),
+            interval: default_interval(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, Default)]
 pub struct SocialLinks {
     #[serde(default)]
@@ -67,6 +121,9 @@ pub struct Config {
     /// repo yet — post pages just skip the comments mount in that case.
     #[serde(default)]
     pub giscus: Option<GiscusConfig>,
+    /// Optional. Absent means the site ships no margin figure at all.
+    #[serde(default)]
+    pub margin: Option<MarginConfig>,
 }
 
 impl Config {
@@ -182,6 +239,63 @@ loading = "lazy"
         assert_eq!(g.input_position, "bottom");
         assert_eq!(g.strict, "0");
         assert_eq!(g.loading, "lazy");
+    }
+
+    #[test]
+    fn margin_block_is_optional() {
+        let path = write_temp(
+            r#"
+title = "T"
+url = "U"
+author = "A"
+description = "D"
+"#,
+        );
+        assert!(Config::load(&path).unwrap().margin.is_none());
+    }
+
+    #[test]
+    fn bare_margin_block_is_a_complete_configuration() {
+        let path = write_temp(
+            r#"
+title = "T"
+url = "U"
+author = "A"
+description = "D"
+
+[margin]
+"#,
+        );
+        let m = Config::load(&path).unwrap().margin.expect("margin should parse");
+        assert_eq!(m.character, "traveller");
+        assert_eq!(m.first_delay, 90);
+        assert_eq!(m.interval, [240, 420]);
+        assert!(m.min_width.is_none());
+    }
+
+    #[test]
+    fn margin_fields_override_individually() {
+        let path = write_temp(
+            r#"
+title = "T"
+url = "U"
+author = "A"
+description = "D"
+
+[margin]
+character = "someone-else"
+scale = 3.0
+min_width = 1200
+interval = [60, 90]
+"#,
+        );
+        let m = Config::load(&path).unwrap().margin.unwrap();
+        assert_eq!(m.character, "someone-else");
+        assert_eq!(m.scale, 3.0);
+        assert_eq!(m.min_width, Some(1200));
+        assert_eq!(m.interval, [60, 90]);
+        // untouched fields keep their defaults
+        assert_eq!(m.first_delay, 90);
     }
 
     #[test]

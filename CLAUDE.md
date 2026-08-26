@@ -46,7 +46,7 @@ There is no lint/format CI step defined in this repo beyond `cargo test`; use `c
 
 - `src/` — all production logic (single binary crate, `[[bin]] name = "rustoki"`).
 - `templates/*.html` — minijinja templates, baked into the binary via `include_str!` (not read from disk at runtime).
-- `styles/main.css` — single stylesheet, inlined into every page's `<head>` at build time via `include_str!` (no external CSS request, no separate CSS file ships in `public/`).
+- `styles/main.css` — single stylesheet, inlined into every page's `<head>` at build time via `include_str!` (no external CSS request, no separate CSS file ships in `public/`). `styles/margin.css` is a second sheet appended to it only when a site opts into the margin figure.
 - `example/` — a small demo site (its own `content/`) used to preview the generator and produce the screenshots in `README.md`. Not part of the crate; run against it with `cargo run --manifest-path ../Cargo.toml -- serve` from inside `example/`.
 
 At runtime (i.e. in whatever site directory the binary is run from), it expects:
@@ -70,9 +70,52 @@ At runtime (i.e. in whatever site directory the binary is run from), it expects:
    - **Images** (`render/assets.rs`, applied as a final pass over the rendered HTML) — every `<img>` is repointed at a build-time WebP derivative, gets intrinsic `width`/`height` (unless the author set an explicit display size), `decoding="async"`, `loading="lazy"` on all but the first image on the page (the likely LCP element), and is wrapped in `<a class="img-original">` linking to the untouched original. Runs over the finished HTML rather than the event stream so raw-HTML `<img>` tags — inside `<figure>` blocks or written inline in legacy posts — get the same treatment as markdown images.
 4. Render through minijinja templates (`templates.rs`) — one context struct per page kind (`PostContext`, `PageContext`, `IndexContext`, `Render404Context`), each wrapping a shared `RenderEnv` (site config + inlined CSS + build year).
 5. Emit `public/index.html` (post listing), `public/posts/<slug>/index.html`, `public/<slug>/index.html` (pages), `public/feed.xml` (Atom, hand-rolled in `feed.rs`), `public/sitemap.xml` (also `feed.rs`), and `public/404.html`.
-6. Copy `content/static/` verbatim into `public/`, then a site's `.image-cache/` on top of it if present — originals ship alongside their derivatives so the full-resolution links resolve and no previously-published URL breaks.
+6. Optionally build the margin figure (`margin/mod.rs`) — see below. Its stylesheet is appended to the inlined CSS and its atlas/stage/runtime are handed to every page kind through `RenderEnv`.
+7. Copy `content/static/` verbatim into `public/`, then a site's `.image-cache/` on top of it if present — originals ship alongside their derivatives so the full-resolution links resolve and no previously-published URL breaks.
 
 Every build fully deletes and recreates `public/` — there's no incremental build.
+
+## The margin figure (`src/margin/`)
+
+Opt-in via a `[margin]` block in `content/config.toml`; absent, the site ships
+none of it. A small pixel character crosses the page's side gutter every few
+minutes, stops once at a prop, and dissolves.
+
+Three registries drive it and nothing else does:
+
+- `cast.rs` — `CAST`, one `Character` per entry. A character is a palette, a
+  set of frames addressed by **role** (`walk_a`/`walk_b` mandatory, `face` and
+  `rest` optional), an optional light-source position, and an optional `Prop`.
+- `routine.rs` — choreography as a list of `Beat`s naming those roles.
+  Coordinates are in **sprite pixels** from the stage's left edge and floor, so
+  changing `[margin] scale` moves everything together and nothing needs
+  re-tuning.
+- `runtime.js` — a character-agnostic player. It plays whatever beat table the
+  build emitted and knows nothing about who is walking.
+
+So adding a character or a choreography is adding a const. No template, no
+stylesheet, no script change. `sprite.rs` turns ASCII grids into SVG, merging
+horizontal runs into one `<path>` per colour — one `<rect>` per run was
+measured at ~4x the bytes, which matters because the atlas is inlined per page.
+
+Two invariants worth not breaking:
+
+- **Sprite fills are literal colours, never Flexoki tokens.** Tokens invert
+  between themes, so a token-built sprite inverts with them (an early cave
+  interior was a hole in light mode and a glowing white blob in dark). Only the
+  atmosphere layer in `margin.css` is allowed to know which theme it is in, and
+  it gets exactly one element per theme — a raking shadow by day, a lantern
+  pool by night — each load-bearing rather than decorative.
+- **Nothing here fails the build.** An unknown character name, a routine whose
+  poses the character can't strike, a ragged grid, a palette gap: each warns on
+  stderr and drops the routine or the whole feature, matching how the rest of
+  the generator treats content-level problems. `cargo test` catches ragged
+  grids and palette gaps for every cast member before they ever ship.
+
+The figure never appears on narrow viewports — at `body { max-width: 700px }`
+there is no gutter — and the runtime checks `innerWidth` once per crossing
+rather than holding a resize listener. The bytes still ship on mobile; that is
+the acknowledged cost of inlining.
 
 ## Content conventions (what a consuming site's `content/` should look like)
 

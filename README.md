@@ -33,7 +33,8 @@ that can be resolved at build time is deferred to the reader's browser.
 - **Almost no client-side JavaScript.** The only script on a page by default
   is a ~1.3 KB inline theme toggle; the rest is plain HTML and CSS. (Opting
   into giscus comments is the one exception — that pulls in a third-party
-  script on post pages.)
+  script on post pages. The optional margin figure adds an inline runtime,
+  but still no request.)
 - **Small, self-contained pages.** The post rendered above — code block,
   display math, and a references section — is ~22 KB of HTML, CSS included,
   in a single request.
@@ -81,10 +82,56 @@ cargo install --path /path/to/rustoki --locked
   without them, just ships images unoptimized).
 - Optional `content/posts/<post-stem>.refs.yaml` bibliography sidecars for
   `\cite{key}`/`\citep{key}`.
+- Optional `[margin]` block for the margin figure (see below).
 
 Templates and CSS are compiled into the binary (`include_str!`) — there's no
 runtime template loading or per-site theming. If you want a different look,
 fork this repo.
+
+## The margin figure
+
+Off by default. Add a `[margin]` block to `content/config.toml` and a small
+pixel traveller crosses the page's side gutter every few minutes: he walks up
+the margin, stops once at a waystone, looks back, and dissolves. Then the
+margin is empty again for four to seven minutes.
+
+```toml
+[margin]
+# every field is optional; this is the full set with its defaults
+character   = "traveller"   # see src/margin/cast.rs for the roster
+scale       = 2.5           # CSS pixels per sprite pixel
+first_delay = 90            # seconds before the first crossing
+interval    = [240, 420]    # seconds between crossings, picked at random
+# min_width = 897           # defaults to whatever this character at this
+                            # scale actually needs; below it, nothing plays
+```
+
+The sprite's colours are literal and never change. What changes is the
+atmosphere, and each theme gets exactly one element: in light mode a long
+raking shadow, without which the figure floats on blank paper; in dark mode a
+lantern pool, without which a black-outlined sprite on a black page isn't
+legible at all. The theme toggle is, in effect, a time-of-day control.
+
+Cost is about **3.9 KB gzipped per page** — atlas, stylesheet and runtime,
+all inlined, no extra requests. While idle it holds one `setTimeout`; a
+crossing animates `transform` and `opacity` only, never layout or paint. There
+are no scroll or resize listeners, `prefers-reduced-motion` gets a single
+still frame and never animates, and a hidden tab defers rather than playing to
+nobody. Layout shift is structurally zero — the stage is fixed-position and
+never enters the text column.
+
+**It does not appear on phones.** At `body { max-width: 700px }` a narrow
+viewport has no gutter to walk in, so the crossing never fires. The bytes
+still ship, which is the honest cost of inlining. Leave `[margin]` out if your
+readers are mostly on mobile.
+
+Adding a second character is adding a `Character` const to `CAST` in
+`src/margin/cast.rs`; adding a new choreography is adding a `Routine` to
+`src/margin/routine.rs`. Frames are addressed by role (`walk_a`, `walk_b`,
+`face`, `rest`), so a routine plays on any character that has the roles it
+names, and one that asks for a missing role is dropped at build time with a
+warning rather than rendering a blank sprite. Neither the template, the
+stylesheet nor the runtime script needs to change.
 
 ## Example
 
