@@ -3,6 +3,16 @@ url = "https://example.com"
 author = "Ada Lovelace"
 description = "A demo site showing off rustoki's default look and features."
 footnote = 'Built with <a href="https://github.com/alcazar90/rustoki">rustoki</a>.'
+avatar = "/img/avatar.png"
+
+# Placeholder links — every field is optional, and the ones left empty simply
+# don't render an icon.
+[social]
+cv = "https://example.com/ada-lovelace-cv.pdf"
+github = "https://github.com/example"
+x = "https://x.com/example"
+goodreads = "https://www.goodreads.com/example"
+linkedin = "https://www.linkedin.com/in/example"
 
 [[menu]]
 name = "Posts"
