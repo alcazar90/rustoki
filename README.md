@@ -156,14 +156,19 @@ cd example
 cargo run --manifest-path ../Cargo.toml --release -- serve --port 8123
 ```
 
-Then open `http://127.0.0.1:8123/`. The home page lists both demo posts:
+Then open `http://127.0.0.1:8123/`. The home page leads with the avatar and
+social links from `config.toml` and lists both demo posts — below, the same
+page at desktop and at phone width:
 
-![The demo site's home page: title, description, and a list of posts, in Flexoki's dark theme](example/screenshots/home.png)
+![The demo site's home page at desktop and phone width side by side: a gradient avatar, a column of social icons, and a list of two posts, in Flexoki's dark theme](example/screenshots/home.png)
 
-`example/content/config.toml` shows the minimal config needed to get a site
-running — title, url, author, description, and a menu. `avatar` and
-`[social]` are both optional; leaving them out (as the example does) drops
-the avatar image and lays the social-links row out without it.
+`example/content/config.toml` shows the config needed to get a site running —
+title, url, author, description, a menu, an `avatar`, and a `[social]` block
+of placeholder links. The last two are optional: leaving `avatar` out drops
+the image and lays the social-links row out horizontally in the space it
+frees, and each `[social]` field left empty renders no icon. The demo's
+avatar is a Flexoki gradient rather than a face, so the example carries no
+likeness of anyone.
 
 ## Development
 
