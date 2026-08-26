@@ -13,3 +13,5 @@ name = "About"
 url = "/about"
 
 [margin]
+first_delay = 90
+interval = [240, 420]
