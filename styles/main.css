@@ -457,6 +457,112 @@ sup a.cite {
 }
 sup a.cite:hover { text-decoration: underline; }
 
+/* Sidenotes
+ *
+ * A footnote — written `\footnote{…}` or `[^key]` — renders as a numbered
+ * mark plus its note (see src/render/footnote.rs). Wide viewports typeset the
+ * note in the right gutter, level with the line that refers to it; narrower
+ * ones have no gutter, so the mark becomes a disclosure toggle and the note
+ * opens inline. The toggle is a checkbox: no script, and no `#fragment`, so
+ * opening a note never scrolls the page or adds a history entry.
+ *
+ * The collapsed inline form is the DEFAULT and the float is layered on top
+ * inside the media query, never the other way round. Reversed, a phone would
+ * evaluate `margin-right: -14rem` and give the whole page horizontal scroll;
+ * this way the worst case of any failure is a note that reads inline.
+ */
+.sn-toggle {
+  /* Out of flow but still tabbable — keyboard users reach the note through
+   * the checkbox, and the focus ring is drawn on the adjacent label. */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.sn-mark {
+  color: var(--tx-2);
+  font-size: 0.75em;
+  vertical-align: super;
+  line-height: 0;
+  cursor: pointer;
+  user-select: none;
+  /* Grow the tap target from ~8px to ~25px square — WCAG 2.2 asks for 24 —
+   * without disturbing the line: the padding is very nearly cancelled by a
+   * negative margin, so the hit box paints larger while occupying the same
+   * space. Kept just short of the line height, so it cannot swallow clicks
+   * meant for the rows above and below. */
+  padding: 0.55em 0.7em;
+  margin: -0.55em -0.6em;
+  transition: color 0.15s ease;
+}
+.sn-mark:hover { color: var(--accent); }
+.sn-toggle:focus-visible + .sn-mark {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+.sidenote {
+  display: none;
+  font-size: 0.85em;
+  line-height: 1.5;
+  color: var(--tx-2);
+  /* One bare URL in a note must not force the page to scroll sideways. */
+  overflow-wrap: break-word;
+}
+.sn-toggle:checked ~ .sidenote {
+  display: block;
+  margin: 0.6rem 0 0.9rem;
+  padding-left: 0.9rem;
+  border-left: 2px solid var(--ui);
+}
+.sn-num {
+  margin-right: 0.4em;
+  color: var(--tx-3);
+  font-variant-numeric: tabular-nums;
+}
+.sn-p { display: block; margin-top: 0.5em; }
+.sidenote .math.display { margin: 0.5em 0; }
+.sidenote math { max-width: 100%; }
+/* Referenced but never defined (see Footnotes::markup). */
+.sn-orphan { color: var(--tx-3); font-size: 0.75em; }
+
+/* The only width breakpoint in this stylesheet, and not an arbitrary one: the
+ * column is centred, so a usable right gutter exists only once the viewport
+ * affords the same space on the left — 700px + 2 x (12rem note + 2rem gap).
+ * Same arithmetic as the margin figure's min_width in src/margin/mod.rs. */
+@media (min-width: 1150px) {
+  .sidenote,
+  .sn-toggle:checked ~ .sidenote {
+    display: block;
+    float: right;
+    clear: right;
+    width: 12rem;
+    /* Outer width goes negative, so the note claims no space in the text
+     * column and the prose keeps its full measure. */
+    margin: 0.35rem -14rem 1rem 0;
+    padding-left: 0;
+    border-left: 0;
+  }
+  /* The note is always visible up here; the mark has nothing left to toggle. */
+  .sn-mark { cursor: default; }
+  /* Contain a note that outruns its paragraph, so the last one on a page
+   * cannot overlap the footer. */
+  article::after {
+    content: "";
+    display: block;
+    clear: both;
+  }
+}
+
+/* A note that is merely collapsed on screen would be lost on paper. */
+@media print {
+  .sidenote,
+  .sn-toggle:checked ~ .sidenote { display: block; }
+  .sn-toggle { display: none; }
+}
+
 /* Tweet/X card — pre-rendered at build time from a snapshot of the tweet
  * (see ssg/src/render/tweet.rs) rather than loaded live via X's embed
  * widget, so it's themed via the same custom properties as the rest of the

@@ -13,6 +13,12 @@
 //! `\citep{key}` patterns are replaced with numbered superscript links, and a
 //! `<section class="references">` is appended after the rendered body.
 //!
+//! Footnotes: `\footnote{…}` is normalized into a CommonMark footnote before
+//! parsing, and both it and hand-written `[^key]` footnotes render as
+//! sidenotes — a numbered mark plus a note the stylesheet puts in the right
+//! gutter, or collapses into a toggle where there is no gutter (see
+//! `render::footnote`).
+//!
 //! Everything else falls through to the default HTML emitter. Errors during
 //! math conversion fall back to a `<code>` block with the raw source rather
 //! than panicking — a broken equation must not break the build.
@@ -20,6 +26,7 @@
 pub mod bibliography;
 pub mod code;
 pub mod figure;
+pub mod footnote;
 pub mod math;
 pub mod tweet;
 
@@ -75,9 +82,16 @@ pub fn render(
     options.insert(Options::ENABLE_TASKLISTS);
     options.insert(Options::ENABLE_MATH);
 
+    // --- footnotes: rewrite `\footnote{…}` into CommonMark footnote syntax
+    // so it and hand-written `[^key]` notes share one code path from here on.
+    // Runs after citation preprocessing so a `\cite{…}` inside a note body is
+    // still numbered by where it appears in the prose, not by where the note
+    // definition gets appended.
+    let body_with_footnotes = footnote::normalize_latex_footnotes(&body_with_cites);
+
     // Preprocess math: normalize legacy MathJax delimiters (\(...\), \[...\])
     // into $/$$ form, and strip unsupported LaTeX envs (equation, label).
-    let preprocessed = math::preprocess_source(&body_with_cites);
+    let preprocessed = math::preprocess_source(&body_with_footnotes);
 
     // --- tweets: replace <blockquote class="twitter-tweet"> with a static,
     // pre-themed card (see render::tweet) so tweets never depend on a
@@ -100,10 +114,16 @@ pub fn render(
 
     let parser = Parser::new_ext(&preprocessed, options);
     let mut toc: Vec<TocEntry> = Vec::new();
-    let events = transform_events(parser, &source.slug, &mut toc, &eq_labels);
+    let mut footnotes = footnote::Footnotes::default();
+    let events = transform_events(parser, &source.slug, &mut toc, &eq_labels, &mut footnotes);
 
     let mut html = String::new();
     pulldown_cmark::html::push_html(&mut html, events.into_iter());
+
+    // --- footnotes: fill in the placeholders left at each reference site.
+    // Deferred to here because pulldown-cmark reaches a note's definition
+    // only after every reference to it.
+    let mut html = footnote::splice(&html, &footnotes);
 
     // --- append bibliography section ---
     let bib_html = bibliography::render_bibliography_html(&bib, &ordered_keys);
@@ -138,14 +158,21 @@ pub fn render(
     })
 }
 
-fn transform_events<'a>(
-    parser: Parser<'a>,
+/// Generic over the event source so a footnote definition's drained events
+/// can be fed back through this same function — a note body then renders by
+/// exactly the rules the prose does, with no second renderer to keep in sync.
+fn transform_events<'a, I>(
+    events: I,
     slug: &str,
     toc: &mut Vec<TocEntry>,
     eq_labels: &HashMap<String, u32>,
-) -> Vec<Event<'a>> {
+    footnotes: &mut footnote::Footnotes,
+) -> Vec<Event<'a>>
+where
+    I: Iterator<Item = Event<'a>>,
+{
     let mut out: Vec<Event<'a>> = Vec::new();
-    let mut iter = parser;
+    let mut iter = events;
     // Track used heading IDs to deduplicate (e.g. two "Overview" headings).
     let mut heading_ids: HashMap<String, usize> = HashMap::new();
 
@@ -256,6 +283,34 @@ fn transform_events<'a>(
                     Err(_) => format!("<code>$${}$$</code>", html_escape(&latex)),
                 };
                 out.push(Event::Html(CowStr::from(html)));
+            }
+
+            // ── Footnotes ───────────────────────────────────────────────────
+            Event::Start(Tag::FootnoteDefinition(name)) => {
+                let mut inner: Vec<Event<'a>> = Vec::new();
+                for e in iter.by_ref() {
+                    if matches!(e, Event::End(TagEnd::FootnoteDefinition)) {
+                        break;
+                    }
+                    inner.push(e);
+                }
+                // Headings are not expected inside a note; collect any into a
+                // throwaway so one can never reach the post's TOC.
+                let mut nested_toc: Vec<TocEntry> = Vec::new();
+                let rendered = transform_events(
+                    inner.into_iter(),
+                    slug,
+                    &mut nested_toc,
+                    eq_labels,
+                    footnotes,
+                );
+                let mut body = String::new();
+                pulldown_cmark::html::push_html(&mut body, rendered.into_iter());
+                footnotes.define(&name, &body);
+                // Emit nothing: the note is rendered at its reference site.
+            }
+            Event::FootnoteReference(name) => {
+                out.push(Event::Html(CowStr::from(footnotes.placeholder(&name))));
             }
 
             // ── Images ───────────────────────────────────────────────────────
@@ -493,6 +548,101 @@ mod tests {
             out.html
         );
         assert!(!out.html.contains("\\label"), "label leaked: {}", out.html);
+    }
+
+    #[test]
+    fn latex_footnote_renders_as_a_sidenote() {
+        let md = "Replacing $R(\\tau)$ naively\\footnote{The same applies for discounted returns.} works.\n";
+        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        assert!(!out.html.contains("\\footnote"), "command leaked: {}", out.html);
+        assert!(
+            out.html.contains(r#"<label class="sn-mark" for="sn-1""#),
+            "expected a sidenote mark; got: {}",
+            out.html
+        );
+        assert!(
+            out.html.contains(r#"<span class="sidenote" role="doc-footnote">"#),
+            "expected a sidenote; got: {}",
+            out.html
+        );
+        assert!(
+            out.html.contains("The same applies for discounted returns."),
+            "expected the note body; got: {}",
+            out.html
+        );
+    }
+
+    #[test]
+    fn markdown_footnote_renders_as_the_same_sidenote() {
+        let md = "Some claim.[^why]\n\n[^why]: Because of a reason.\n";
+        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        assert!(
+            out.html.contains(r#"<span class="sidenote" role="doc-footnote">"#),
+            "expected a sidenote; got: {}",
+            out.html
+        );
+        assert!(out.html.contains("Because of a reason."), "got: {}", out.html);
+        // pulldown-cmark's own footnote rendering must not also appear.
+        assert!(
+            !out.html.contains("footnote-definition"),
+            "default footnote block leaked: {}",
+            out.html
+        );
+    }
+
+    #[test]
+    fn footnote_body_goes_through_the_full_inline_pipeline() {
+        // A note body is walked by `transform_events` like any other content,
+        // so math and links inside it render rather than passing through raw.
+        let md = "Claim\\footnote{Holds when $x > 0$, see [the paper](https://example.com).} here.\n";
+        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let note_start = out.html.find(r#"<span class="sidenote""#).expect("no sidenote");
+        let note = &out.html[note_start..];
+        assert!(note.contains("<math"), "expected MathML in the note; got: {note}");
+        assert!(
+            note.contains(r#"<a href="https://example.com">"#),
+            "expected a link in the note; got: {note}"
+        );
+        assert!(!note.contains('$'), "literal $ leaked: {note}");
+    }
+
+    #[test]
+    fn sidenote_contains_no_block_elements() {
+        // The note sits mid-paragraph, so a <p> or <div> inside it would be
+        // hoisted out by the HTML parser and take the float with it.
+        let md = "Claim\\footnote{A note with $$y = x$$ display math.} here.\n";
+        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let note_start = out.html.find(r#"<span class="sidenote""#).expect("no sidenote");
+        let note_end = note_start
+            + out.html[note_start..]
+                .find("</p>")
+                .expect("sidenote escaped its paragraph");
+        let note = &out.html[note_start..note_end];
+        assert!(!note.contains("<p>"), "block <p> inside note: {note}");
+        assert!(!note.contains("<div"), "block <div> inside note: {note}");
+    }
+
+    #[test]
+    fn footnotes_are_numbered_by_first_reference() {
+        let md = "One\\footnote{first note} two\\footnote{second note} three.\n";
+        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let one = out.html.find("first note").expect("note 1 missing");
+        let two = out.html.find("second note").expect("note 2 missing");
+        assert!(one < two, "notes out of order: {}", out.html);
+        assert!(out.html.contains(r#"id="sn-1""#), "got: {}", out.html);
+        assert!(out.html.contains(r#"id="sn-2""#), "got: {}", out.html);
+    }
+
+    #[test]
+    fn footnote_written_in_a_code_span_stays_literal() {
+        let md = "Write `\\footnote{a note}` to add one.\n";
+        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        assert!(
+            out.html.contains("footnote{a note}"),
+            "expected literal text in the code span; got: {}",
+            out.html
+        );
+        assert!(!out.html.contains("sidenote"), "got: {}", out.html);
     }
 
     #[test]
