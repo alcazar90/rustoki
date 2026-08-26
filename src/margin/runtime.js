@@ -9,6 +9,17 @@ if(!r)return;
 // aura element, so this is a list rather than a pair.
 var mv=[].slice.call(r.querySelectorAll('.mg-fig,.mg-aura')),
     fr=[].slice.call(r.querySelectorAll('.mg-fr')),i;
+// Persists the wall-clock time an idle wait is due, so a same-tab navigation
+// resumes the countdown instead of restarting it. sessionStorage throws in
+// some private-browsing modes; a lost wait just falls back to a fresh one.
+var K='mg-due';
+function due(ms){try{sessionStorage.setItem(K,Date.now()+ms);}catch(e){}return ms;}
+function forget(){try{sessionStorage.removeItem(K);}catch(e){}}
+function resume(fallbackMs){
+  var s=null;
+  try{s=sessionStorage.getItem(K);}catch(e){}
+  return s?Math.max(0,s-Date.now()):fallbackMs;
+}
 function set(y,op,dur,fade){
   var t='translateY('+(-y*D.s)+'px)',d=dur+'ms, '+fade+'ms';
   for(var k=0;k<mv.length;k++){
@@ -43,10 +54,11 @@ function cross(done){
 }
 function loop(){
   setTimeout(function(){
+    forget();
     // Width is read here, once per crossing, not by a resize listener.
     if(document.hidden||innerWidth<D.m){loop();return;}
     cross(loop);
-  },(D.a+Math.random()*(D.b-D.a))*1000);
+  },due((D.a+Math.random()*(D.b-D.a))*1000));
 }
 if(matchMedia('(prefers-reduced-motion: reduce)').matches){
   var b=D.r[0].b,st=b[0];
@@ -54,6 +66,9 @@ if(matchMedia('(prefers-reduced-motion: reduce)').matches){
   show(st[4],false);r.classList.add('mg-lit');set(st[1],1,0,0);
 }else{
   r.classList.add('mg-idle');  // idle keeps no compositing layer alive
-  setTimeout(function(){(!document.hidden&&innerWidth>=D.m)?cross(loop):loop();},D.f*1000);
+  setTimeout(function(){
+    forget();
+    (!document.hidden&&innerWidth>=D.m)?cross(loop):loop();
+  },due(resume(D.f*1000)));
 }
 })();

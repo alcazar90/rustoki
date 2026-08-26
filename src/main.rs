@@ -177,9 +177,10 @@ fn cmd_build(include_drafts: bool) -> Result<()> {
             .map(|(name, ms)| format!("{name} {:.1}s", *ms as f64 / 1000.0))
             .collect();
         println!(
-            "  margin figure: {} — {} B atlas, {}",
+            "  margin figure: {} — {} B atlas, min {}px wide, {}",
             m.character,
             m.atlas.len(),
+            m.min_width,
             routines.join(", ")
         );
     }
