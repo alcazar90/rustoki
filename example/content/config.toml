@@ -11,3 +11,5 @@ url = "/"
 [[menu]]
 name = "About"
 url = "/about"
+
+[margin]

@@ -165,6 +165,7 @@ mod tests {
             social: Default::default(),
             menu: Vec::new(),
             giscus: None,
+            margin: None,
         }
     }
 
