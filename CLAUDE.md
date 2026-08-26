@@ -42,6 +42,16 @@ cargo install --path . --locked
 
 There is no lint/format CI step defined in this repo beyond `cargo test`; use `cargo fmt`/`cargo clippy` as normal Rust hygiene if touching code.
 
+## Releasing a version bump
+
+1. Merge the feature branch into `main` first — the version bump is a separate step on top of `main`, not bundled into the feature PR.
+2. `git checkout main && git pull` to get that merge locally.
+3. Edit `version` in `Cargo.toml` to the new version.
+4. `cargo check` to sync the `rustoki` entry in `Cargo.lock` (don't hand-edit `Cargo.lock`).
+5. `git add Cargo.toml Cargo.lock && git commit -m "chore: bump version to vX.Y.Z"`.
+6. `git tag vX.Y.Z`.
+7. `git push origin main && git push origin vX.Y.Z` — pushing the tag alone does not push the commit it points to.
+
 ## Layout
 
 - `src/` — all production logic (single binary crate, `[[bin]] name = "rustoki"`).
