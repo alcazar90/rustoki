@@ -225,19 +225,22 @@ const WAYSTONE_PAL: Palette = &[
 ];
 
 const WAYSTONE: &[&str] = &[
-    // one stone, by the side of the road
-    "....oooo....",
-    "..oocccccoo.",
-    ".occcbbbbbco",
-    ".ocbbbbbbbbo",
-    "occbbbbbbabo",
-    "ocbbbbbbaabo",
-    "ocbbbbbaaabo",
-    "ocbbbbaaaabo",
-    ".obbbaaaaabo",
-    ".ommbaaaaamo",
-    "..ommmaaamo.",
-    "...oommmoo..",
+    // two stones, by the side of the road: the big one is the original
+    // single-stone grid untouched, columns 7 on; the small one is tucked
+    // against its base at columns 0-6, resting rather than stacked, the way
+    // the footer mark's own two shapes sit side by side rather than piled.
+    "...........oooo....",
+    ".........oocccccoo.",
+    "........occcbbbbbco",
+    "........ocbbbbbbbbo",
+    ".......occbbbbbbabo",
+    ".......ocbbbbbbaabo",
+    "..ooo..ocbbbbbaaabo",
+    ".occcboocbbbbaaaabo",
+    "occcbao.obbbaaaaabo",
+    "obbbaao.ommbaaaaamo",
+    ".omaam...ommmaaamo.",
+    "..omo.....oommmoo..",
 ];
 
 const TRAVELLER: Character = Character {
@@ -257,7 +260,7 @@ const TRAVELLER: Character = Character {
     light: Some((2, 3)),
     prop: Some(Prop {
         palette: WAYSTONE_PAL,
-        sprite: Sprite { w: 12, h: 12, rows: WAYSTONE },
+        sprite: Sprite { w: 19, h: 12, rows: WAYSTONE },
         x: 21,
         y: 15,
     }),
