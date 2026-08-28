@@ -98,7 +98,16 @@ const TRAVELLER_PAL: Palette = &[
     ('s', "#8A7050"),
     ('r', "#C6BEA8"),
     ('g', "#6B5B35"),
-    ('f', "#F5CE7A"),
+    // The flame, alone in this palette, isn't a literal hex: it's the one
+    // pixel meant to keep moving through a held pose, and a <path> inside
+    // <symbol>/<defs> never ticks a CSS animation targeting it directly — a
+    // <use> instance's rendered copy is what animates, and only an inherited
+    // property (not an explicit attribute) crosses into it. `currentColor`
+    // resolves against `color` on the .mg-fig element in margin.css, which is
+    // what the flicker actually animates; it is still one fixed colour at
+    // rest, not a theme token, so this doesn't reopen the literal-colour rule
+    // sprite.rs documents — it's a mechanism, not a second appearance.
+    ('f', "currentColor"),
 ];
 
 const T_WALK_A: &[&str] = &[

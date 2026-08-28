@@ -31,9 +31,13 @@
   position: absolute;
   bottom: 0;
   will-change: transform;
-  /* Durations are set per beat by the runtime. Only these two properties ever
-   * animate, so a crossing never touches layout or paint. */
-  transition: transform 0s linear, opacity .9s linear;
+  /* Durations are set per beat by the runtime; only the easing lives here.
+   * A single ease-out curve across a whole beat's translateY gives every
+   * walking beat its own accel/decel for free — no keyframe splitting
+   * needed, since the curve already slows him into an arrival and eases
+   * him away from a stop. Only these two properties ever animate, so a
+   * crossing never touches layout or paint. */
+  transition: transform 0s cubic-bezier(.33, 0, .15, 1), opacity .9s ease-in-out;
 }
 /* An explicit box, because the shadow is sized off the figure and the frames
  * inside are all absolutely positioned — without it the box collapses. */
@@ -95,7 +99,28 @@
   50%, 100% { opacity: 1; transform: translateY(calc(var(--mg-unit) * -1)); }
 }
 
+/* The lantern flame, live even through a 3.5-9s held pose so he never reads
+ * as a paused frame: he is his own light source, so the light should be the
+ * one thing that never stops moving. The flame's fill is `currentColor`
+ * (see cast.rs), so animating `color` here reaches every frame that carries
+ * it, in lockstep, through ordinary inheritance into each frame's <use> —
+ * the one thing that actually crosses into a <use> instance's rendering,
+ * unlike a property change made directly to the shared <symbol>. Two uneven
+ * dips per cycle rather than a steady pulse, cut with steps() rather than
+ * faded, so it reads as flicker and not a second gait. Colours are two
+ * others already in this palette, not new ones. */
+#mg .mg-fig {
+  color: #F5CE7A;
+  animation: mg-flame 2.6s steps(1) infinite;
+}
+@keyframes mg-flame {
+  0%, 58%, 79% { color: #F5CE7A; }
+  64%, 76% { color: #A9793F; }
+  83%, 100% { color: #C9975F; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   #mg.mg-walk .mg-w0, #mg.mg-walk .mg-w1 { animation: none; }
   #mg .mg-fig, #mg .mg-aura { transition: none; }
+  #mg .mg-fig { animation: none; }
 }
