@@ -95,14 +95,19 @@ function boot(){
     var cr=null;
     try{cr=sessionStorage.getItem(C);}catch(e){}
     var p=cr?cr.split(','):null;
-    // A recorded crossing can still be under way even when this tab can't
-    // show it (hidden — e.g. a nav link opened in a background tab — or too
-    // narrow): sessionStorage is shared with whichever tab is actually
-    // playing it. Only clear the record once the crossing has genuinely run
-    // its course; otherwise leave it alone so that tab's own next navigation
-    // can still resume it.
+    // A recorded crossing can still be under way even when document.hidden
+    // reads true here — that reads true on plenty of perfectly normal
+    // same-tab loads (a click that lands mid-paint, prerendering, a nav link
+    // opened in a background tab), not just tabs nobody is looking at. So it
+    // is not a reason to skip resuming: resuming costs nothing if the tab
+    // really is backgrounded (the browser already throttles it), whereas
+    // skipping it strands the record unrendered while real time keeps
+    // accruing against it — the next page then resumes it far later than it
+    // actually is, jumping straight into the dissolve. Width is the only
+    // real reason not to render: below it there is no gutter to draw in.
+    // Only clear the record once the crossing has genuinely run its course.
     var loc=p?locate(D.r[+p[0]].b,Date.now()-p[1]):null;
-    if(loc&&!document.hidden&&innerWidth>=D.m)cross(loop,{i:+p[0],t:+p[1]});
+    if(loc&&innerWidth>=D.m)cross(loop,{i:+p[0],t:+p[1]});
     else{if(p&&!loc)untrack();idleWait();}
   }
 }
