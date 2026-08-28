@@ -94,9 +94,16 @@ function boot(){
   }else{
     var cr=null;
     try{cr=sessionStorage.getItem(C);}catch(e){}
-    var p=cr?cr.split(','):null,onStage=p&&!document.hidden&&innerWidth>=D.m&&locate(D.r[+p[0]].b,Date.now()-p[1]);
-    if(onStage)cross(loop,{i:+p[0],t:+p[1]});
-    else{if(p)untrack();idleWait();}
+    var p=cr?cr.split(','):null;
+    // A recorded crossing can still be under way even when this tab can't
+    // show it (hidden — e.g. a nav link opened in a background tab — or too
+    // narrow): sessionStorage is shared with whichever tab is actually
+    // playing it. Only clear the record once the crossing has genuinely run
+    // its course; otherwise leave it alone so that tab's own next navigation
+    // can still resume it.
+    var loc=p?locate(D.r[+p[0]].b,Date.now()-p[1]):null;
+    if(loc&&!document.hidden&&innerWidth>=D.m)cross(loop,{i:+p[0],t:+p[1]});
+    else{if(p&&!loc)untrack();idleWait();}
   }
 }
 // A hovered/pressed link can make Chrome prerender its destination in a
