@@ -239,6 +239,35 @@ footer {
    marks (each platform's own logo treatment), unlike the site's own line-art
    icon set (.brand-mark, .footer-mark, .appearance-toggle) — a deliberate
    split, not an inconsistency. */
+.profile-row {
+  position: relative;
+  margin: 0 0 1.5rem;
+}
+.profile-row .profile { margin-bottom: 0; }
+/* Fills the empty space to the right of the avatar/icons with a generated
+   contour pattern (see `topomap.rs`). `left` mirrors `.social-links`' own
+   offset math plus its shrink-to-fit width, so the decoration starts flush
+   with the icon column rather than overlapping it. Hidden below a width
+   where that remaining space would be too cramped to read as a pattern. */
+.profile-decor {
+  position: absolute;
+  left: calc(3.35rem + 150px);
+  right: 0;
+  top: 0;
+  height: 128px;
+}
+.profile-decor svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* --stone reads clearly at low opacity in both themes (~8.6:1 against
+     --bg either way) — --tx-3 is tuned for dark-mode-only faint text and
+     nearly vanishes against the light theme's pale cream background. */
+  color: var(--stone);
+}
+@media (max-width: 640px) {
+  .profile-decor { display: none; }
+}
 .profile {
   position: relative;
   display: inline-block;

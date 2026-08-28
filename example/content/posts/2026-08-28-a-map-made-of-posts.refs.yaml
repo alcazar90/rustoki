@@ -1,0 +1,11 @@
+lorensen1987:
+  author: "William E. Lorensen and Harvey E. Cline"
+  title: "Marching Cubes: A High Resolution 3D Surface Construction Algorithm"
+  year: 1987
+  journal: "ACM SIGGRAPH Computer Graphics, Volume 21"
+
+fournier1982:
+  author: "Alain Fournier, Don Fussell, and Loren Carpenter"
+  title: "Computer Rendering of Stochastic Models"
+  year: 1982
+  journal: "Communications of the ACM"

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="profile-row">
 <section class="profile{% if not site.avatar %} no-avatar{% endif %}">
   {% if site.avatar %}
   {# Dimensions match .avatar in main.css — the home page's LCP element, so
@@ -24,6 +25,8 @@
     </a>{% endif %}
   </div>
 </section>
+{% if site.avatar and topomap %}<div class="profile-decor" aria-hidden="true">{{ topomap|safe }}</div>{% endif %}
+</div>
 <section class="intro">
   <p>{{ site.description }}</p>
 </section>

@@ -22,6 +22,7 @@ mod margin;
 mod render;
 mod serve;
 mod templates;
+mod topomap;
 
 use crate::config::Config;
 use crate::content::Source;
@@ -255,9 +256,16 @@ fn cmd_build(include_drafts: bool) -> Result<()> {
 
     // Real home page: post listing in reverse-chronological order (sort
     // already done by content::walk).
+    // Purely decorative — one terrain landmark per post (keyed on its slug,
+    // so it's stable and unaffected by the others), over an ambient texture
+    // seeded from the author. Never fails the build: an empty string here
+    // just means the template omits the container.
+    let topomap_slugs: Vec<&str> = index_entries.iter().map(|p| p.slug.as_str()).collect();
+    let topomap = topomap::build(&config.author, &topomap_slugs).unwrap_or_default();
     let index_ctx = IndexContext {
         env: env.clone_borrowed(),
         posts: &index_entries,
+        topomap: &topomap,
     };
     let index_html = templates
         .render_index(&index_ctx)
