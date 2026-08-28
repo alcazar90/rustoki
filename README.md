@@ -102,18 +102,19 @@ fork this repo.
 ## The margin figure
 
 Off by default. Add a `[margin]` block to `content/config.toml` and a small
-pixel traveller crosses the page's side gutter every few minutes: he walks up
-the margin, stops once at a waystone, looks back, and dissolves. Then the
-margin is empty again for four to seven minutes.
+pixel traveller crosses the page's side gutter every couple of minutes: he
+walks up the margin, stops once at a waystone — two stones, echoing the
+site's own footer mark — looks back, and dissolves. Then the margin is empty
+again for a minute and a half to three minutes.
 
 ```toml
 [margin]
 # every field is optional; this is the full set with its defaults
 character   = "traveller"   # see src/margin/cast.rs for the roster
 scale       = 2.5           # CSS pixels per sprite pixel
-first_delay = 90            # seconds before the first crossing
-interval    = [240, 420]    # seconds between crossings, picked at random
-# min_width = 897           # defaults to whatever this character at this
+first_delay = 40            # seconds before the first crossing
+interval    = [90, 180]     # seconds between crossings, picked at random
+# min_width = 932           # defaults to whatever this character at this
                             # scale actually needs; below it, nothing plays
 ```
 
