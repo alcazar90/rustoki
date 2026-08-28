@@ -68,7 +68,7 @@ body {
   background: var(--bg);
   max-width: 700px;
   margin: 0 auto;
-  padding: 2rem 2vw;
+  padding: 2rem clamp(20px, 4vw, 2rem);
 }
 
 /* Headings */
@@ -144,52 +144,56 @@ header nav { display: flex; gap: 1rem; align-items: center; }
 header nav a { color: var(--tx-2); text-decoration: none; }
 header nav a:hover { color: var(--accent); }
 
-/* Theme toggle */
+/* Theme toggle — a yin-yang that flips between the site's ink and paper colors */
 .appearance-toggle {
-  background: var(--bg-2);
-  border: 1px solid var(--ui);
-  border-radius: 12px;
-  width: 36px;
-  height: 20px;
-  padding: 0;
-  cursor: pointer;
   position: relative;
-  flex-shrink: 0;
-  transition: border-color 0.2s;
-}
-.appearance-toggle:hover { border-color: var(--tx-3); }
-
-.toggle-check {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
+  background: none;
+  border: none;
   border-radius: 50%;
-  background: var(--tx-2);
-  transition: transform 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 0;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
 }
-[data-theme="dark"] .toggle-check { transform: translateX(22px); }
-
-.toggle-icon {
-  position: relative;
-  width: 12px;
-  height: 12px;
-}
-.icon-sun, .icon-moon {
+/* Invisible ~40px hit area without disturbing the header's flex layout */
+.appearance-toggle::before {
+  content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  color: var(--bg);
-  transition: opacity 0.15s;
+  inset: -9px;
 }
-.icon-sun  { opacity: 1; }
-.icon-moon { opacity: 0; }
-[data-theme="dark"] .icon-sun  { opacity: 0; }
-[data-theme="dark"] .icon-moon { opacity: 1; }
+.appearance-toggle:focus { outline: none; }
+.appearance-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.appearance-toggle svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(calc(var(--turns, 0) * 180deg));
+  transition: transform 0.6s cubic-bezier(0.3, -0.1, 0.3, 1.15);
+}
+.appearance-toggle:hover svg { transform: rotate(calc(var(--turns, 0) * 180deg)) scale(1.1); }
+
+.toggle-ring {
+  fill: none;
+  stroke: var(--ui);
+  stroke-width: 1.5;
+  transition: stroke 0.2s;
+}
+.appearance-toggle:hover .toggle-ring { stroke: var(--tx-3); }
+.toggle-paper { fill: var(--bg); transition: fill 0.3s ease-in-out 0.1s; }
+.toggle-ink   { fill: var(--tx); transition: fill 0.3s ease-in-out 0.1s; }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Keep the state change legible via color, drop all spatial motion */
+  .appearance-toggle svg { transition: none; }
+  .appearance-toggle:hover svg { transform: rotate(calc(var(--turns, 0) * 180deg)); }
+  .toggle-ring { transition: none; }
+  .toggle-paper, .toggle-ink { transition: fill 0.15s ease; }
+}
 
 /* Footer */
 footer {
@@ -231,7 +235,55 @@ footer {
   vertical-align: middle;
 }
 
-/* Profile avatar + social links */
+/* Profile avatar + social links. Icons here are solid third-party brand
+   marks (each platform's own logo treatment), unlike the site's own line-art
+   icon set (.brand-mark, .footer-mark, .appearance-toggle) — a deliberate
+   split, not an inconsistency. */
+.profile-row {
+  position: relative;
+  margin: 0 0 1.5rem;
+}
+.profile-row .profile { margin-bottom: 0; }
+/* Fills the empty space to the right of the avatar/icons with a generated
+   contour pattern (see `topomap.rs`). `left` mirrors `.social-links`' own
+   offset math plus its shrink-to-fit width, so the decoration starts flush
+   with the icon column rather than overlapping it. Hidden below a width
+   where that remaining space would be too cramped to read as a pattern. */
+.profile-decor {
+  position: absolute;
+  left: calc(3.35rem + 150px);
+  right: 0;
+  top: 0;
+  height: 128px;
+}
+.profile-decor svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* --stone reads clearly at full strength in both themes (~8.6:1 against
+     --bg either way) — --tx-3 is tuned for dark-mode-only faint text and
+     nearly vanishes against the light theme's pale cream background. */
+  color: var(--stone);
+  /* Each contour path carries `--i` (its quantile level, 0-4, see
+     topomap.rs). Light needs a stronger base/step than dark to clear the
+     same felt contrast: the same alpha reads much fainter against the
+     light theme's pale --bg than against the near-black dark one, which is
+     what made the pattern nearly invisible in light mode. The resulting
+     ramp (faint inner rings, crisper outer one) also happens to mimic a
+     real topo map's bolded index contours. */
+  --topo-op-base: 0.32;
+  --topo-op-step: 0.09;
+}
+[data-theme="dark"] .profile-decor svg {
+  --topo-op-base: 0.16;
+  --topo-op-step: 0.045;
+}
+.profile-decor svg path {
+  opacity: calc(var(--topo-op-base) + var(--topo-op-step) * var(--i));
+}
+@media (max-width: 640px) {
+  .profile-decor { display: none; }
+}
 .profile {
   position: relative;
   display: inline-block;
@@ -240,13 +292,12 @@ footer {
 }
 .social-links {
   position: absolute;
-  left: calc(1.85rem + 128px + 14px);
+  left: calc(1.85rem + 128px + 14px - 0.5rem);
   top: 0;
   bottom: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 0.55rem;
 }
 .social-links a {
   color: var(--tx-3);
@@ -255,9 +306,22 @@ footer {
   align-items: center;
   transition: color 0.15s;
   line-height: 1;
+  /* Enlarges the click/tap target well past the 16px glyph without
+     changing its rendered position or the visual gap between icons. */
+  padding: 0.4rem 0.5rem;
 }
 .social-links a:hover { color: var(--tx); }
+.social-links a:focus { outline: none; }
+.social-links a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
 .social-links svg { width: 16px; height: 16px; }
+/* LinkedIn's mark is a near-solid square, unlike the other brand glyphs'
+   open silhouettes; sized down slightly so it reads at the same optical
+   weight as the rest of the stack instead of dominating it. */
+.social-links svg.icon-dense { width: 14px; height: 14px; }
 .profile.no-avatar {
   display: block;
   padding-left: 0;

@@ -52,11 +52,15 @@ pub struct MarginConfig {
     #[serde(default)]
     pub min_width: Option<u32>,
     /// Seconds before the first crossing. Long enough that it never reads as
-    /// part of the page arriving.
+    /// part of the page arriving, short enough that even a short visit has a
+    /// real chance of one.
     #[serde(default = "default_first_delay")]
     pub first_delay: u32,
     /// Seconds between crossings, picked uniformly from this range so it never
-    /// syncs to scrolling or to itself.
+    /// syncs to scrolling or to itself. Tuned to a typical post's reading
+    /// time — often enough that the figure is a thing the site is known for,
+    /// not a rumour — while the crossing itself stays too slow and too quiet
+    /// to read as a widget.
     #[serde(default = "default_interval")]
     pub interval: [u32; 2],
 }
@@ -68,10 +72,10 @@ fn default_scale() -> f32 {
     2.5
 }
 fn default_first_delay() -> u32 {
-    90
+    40
 }
 fn default_interval() -> [u32; 2] {
-    [240, 420]
+    [90, 180]
 }
 
 impl Default for MarginConfig {
@@ -268,8 +272,8 @@ description = "D"
         );
         let m = Config::load(&path).unwrap().margin.expect("margin should parse");
         assert_eq!(m.character, "traveller");
-        assert_eq!(m.first_delay, 90);
-        assert_eq!(m.interval, [240, 420]);
+        assert_eq!(m.first_delay, 40);
+        assert_eq!(m.interval, [90, 180]);
         assert!(m.min_width.is_none());
     }
 
@@ -295,7 +299,7 @@ interval = [60, 90]
         assert_eq!(m.min_width, Some(1200));
         assert_eq!(m.interval, [60, 90]);
         // untouched fields keep their defaults
-        assert_eq!(m.first_delay, 90);
+        assert_eq!(m.first_delay, 40);
     }
 
     #[test]

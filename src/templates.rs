@@ -86,6 +86,9 @@ pub struct PageContext<'a> {
 pub struct IndexContext<'a> {
     pub env: RenderEnv<'a>,
     pub posts: &'a [PostListEntry],
+    /// Pre-rendered `<svg>` contour decoration, or empty string when the
+    /// field turned out degenerate. See `topomap::build`.
+    pub topomap: &'a str,
 }
 
 /// Full context handed to `render_404`. Minimal — the 404 page only needs
@@ -186,6 +189,7 @@ impl Templates {
             description => ctx.env.site.description.clone(),
             lang => "en",
             posts => ctx.posts,
+            topomap => ctx.topomap,
         })
         .context("rendering index.html")
     }
@@ -336,6 +340,7 @@ mod tests {
                     margin: None,
                 },
                 posts: &[],
+                topomap: "",
             })
             .unwrap();
         assert!(
@@ -509,6 +514,7 @@ mod tests {
         let ctx = IndexContext {
             env,
             posts: &posts,
+            topomap: "",
         };
         let html = templates.render_index(&ctx).unwrap();
         assert!(html.contains("Test Site"), "missing site title in: {html}");
@@ -545,6 +551,7 @@ mod tests {
         let ctx = IndexContext {
             env,
             posts: &[],
+            topomap: "",
         };
         let html = templates.render_index(&ctx).unwrap();
         // Header link still present even when there are no posts.
