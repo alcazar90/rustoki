@@ -12,6 +12,7 @@
   var t=s||(p?'dark':'light');
   document.documentElement.dataset.theme=t;
   document.documentElement.style.colorScheme=t;
+  document.documentElement.style.setProperty('--turns',t==='dark'?'1':'0');
   if(t==='dark'){document.documentElement.style.background='#100F0F';document.documentElement.style.color='#CECDC3';}
 })();
 </script>
@@ -33,12 +34,13 @@
   <nav>
     {% for item in site.menu %}<a href="{{ item.url }}">{{ item.name }}</a>{% endfor %}
     <button id="theme-toggle" class="appearance-toggle" type="button" role="switch" aria-checked="false" aria-label="Toggle theme">
-      <span class="toggle-check">
-        <span class="toggle-icon">
-          <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-          <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        </span>
-      </span>
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle class="toggle-ring" cx="50" cy="50" r="47.25"/>
+        <circle class="toggle-paper" cx="50" cy="50" r="47"/>
+        <path class="toggle-ink" d="M50,3 A47,47 0 0,1 50,97 A23.5,23.5 0 0,1 50,50 A23.5,23.5 0 0,0 50,3 Z"/>
+        <circle class="toggle-ink" cx="50" cy="26.5" r="6.5"/>
+        <circle class="toggle-paper" cx="50" cy="73.5" r="6.5"/>
+      </svg>
     </button>
   </nav>
 </header>
@@ -58,6 +60,8 @@
     document.documentElement.style.color='';
     localStorage.setItem('theme',cur);
     b.setAttribute('aria-checked',cur==='dark'?'true':'false');
+    var turns=parseInt(document.documentElement.style.getPropertyValue('--turns'),10)||0;
+    document.documentElement.style.setProperty('--turns',turns+1);
   }
   b.addEventListener('click',toggleTheme);
   document.addEventListener('keydown',function(e){
