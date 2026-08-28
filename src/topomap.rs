@@ -350,11 +350,6 @@ pub fn build(ambient_seed: &str, post_slugs: &[&str]) -> Option<String> {
             continue;
         }
         any_segment = true;
-        // Calibrated against --stone, not --tx-3: this range (~1.3-1.8:1
-        // effective contrast) reads as a consistent, subtle elevation
-        // gradient in both light and dark themes — see the color comment
-        // on `.profile-decor svg` in main.css for why the token changed.
-        let opacity = 0.16 + 0.045 * i as f32;
         // One decimal place is already ~0.3px of positioning error at this
         // canvas's typical display size — well below anti-aliasing's own
         // fuzziness, let alone the 0.4-unit (~1.3px) stroke width. Chaining
@@ -370,9 +365,13 @@ pub fn build(ambient_seed: &str, post_slugs: &[&str]) -> Option<String> {
                 }
             }
         }
+        // Opacity is left to CSS (`--i` selects a per-theme base/step in
+        // `.profile-decor svg`) rather than baked in here, since the same
+        // stroke alpha reads at very different effective contrast against
+        // light vs dark `--bg` — see the comment there.
         let _ = write!(
             svg,
-            r#"<path d="{d}" stroke-width="0.4" opacity="{opacity:.2}" vector-effect="non-scaling-stroke"/>"#
+            r#"<path d="{d}" style="--i:{i}" stroke-width="0.4" vector-effect="non-scaling-stroke"/>"#
         );
     }
     svg.push_str("</svg>");

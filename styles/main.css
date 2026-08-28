@@ -260,10 +260,26 @@ footer {
   width: 100%;
   height: 100%;
   display: block;
-  /* --stone reads clearly at low opacity in both themes (~8.6:1 against
+  /* --stone reads clearly at full strength in both themes (~8.6:1 against
      --bg either way) — --tx-3 is tuned for dark-mode-only faint text and
      nearly vanishes against the light theme's pale cream background. */
   color: var(--stone);
+  /* Each contour path carries `--i` (its quantile level, 0-4, see
+     topomap.rs). Light needs a stronger base/step than dark to clear the
+     same felt contrast: the same alpha reads much fainter against the
+     light theme's pale --bg than against the near-black dark one, which is
+     what made the pattern nearly invisible in light mode. The resulting
+     ramp (faint inner rings, crisper outer one) also happens to mimic a
+     real topo map's bolded index contours. */
+  --topo-op-base: 0.32;
+  --topo-op-step: 0.09;
+}
+[data-theme="dark"] .profile-decor svg {
+  --topo-op-base: 0.16;
+  --topo-op-step: 0.045;
+}
+.profile-decor svg path {
+  opacity: calc(var(--topo-op-base) + var(--topo-op-step) * var(--i));
 }
 @media (max-width: 640px) {
   .profile-decor { display: none; }
