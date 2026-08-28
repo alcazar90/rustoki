@@ -235,7 +235,10 @@ footer {
   vertical-align: middle;
 }
 
-/* Profile avatar + social links */
+/* Profile avatar + social links. Icons here are solid third-party brand
+   marks (each platform's own logo treatment), unlike the site's own line-art
+   icon set (.brand-mark, .footer-mark, .appearance-toggle) — a deliberate
+   split, not an inconsistency. */
 .profile {
   position: relative;
   display: inline-block;
@@ -244,13 +247,12 @@ footer {
 }
 .social-links {
   position: absolute;
-  left: calc(1.85rem + 128px + 14px);
+  left: calc(1.85rem + 128px + 14px - 0.5rem);
   top: 0;
   bottom: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 0.55rem;
 }
 .social-links a {
   color: var(--tx-3);
@@ -259,9 +261,22 @@ footer {
   align-items: center;
   transition: color 0.15s;
   line-height: 1;
+  /* Enlarges the click/tap target well past the 16px glyph without
+     changing its rendered position or the visual gap between icons. */
+  padding: 0.4rem 0.5rem;
 }
 .social-links a:hover { color: var(--tx); }
+.social-links a:focus { outline: none; }
+.social-links a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
 .social-links svg { width: 16px; height: 16px; }
+/* LinkedIn's mark is a near-solid square, unlike the other brand glyphs'
+   open silhouettes; sized down slightly so it reads at the same optical
+   weight as the rest of the stack instead of dominating it. */
+.social-links svg.icon-dense { width: 14px; height: 14px; }
 .profile.no-avatar {
   display: block;
   padding-left: 0;
