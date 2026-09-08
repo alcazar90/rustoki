@@ -28,7 +28,11 @@
     "Roboto Mono", Menlo, Monaco, Consolas, monospace;
   --font-small:   0.875em;
   --font-smaller: 0.8em;
-  --heading-weight: 500;
+  /* Two weights on the whole page: this one for anything that has to hold
+     its own against body text, 400 for everything else. 500 in the system
+     font read as slightly darker prose rather than a heading; 300 for the
+     site title was thin on macOS and silently 400 on the fallbacks. */
+  --heading-weight: 600;
 
   color-scheme: light;
 }
@@ -61,7 +65,9 @@ html { background: var(--bg); }
 body {
   font-family: var(--font-content);
   font-size: 17px;
-  line-height: 1.5;
+  /* ~78 characters to the line at this size and column; a little more lead
+     loosens the block without touching the width everything derives from. */
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   color: var(--tx);
@@ -77,10 +83,13 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.25;
   font-weight: var(--heading-weight);
 }
-h1 { font-size: calc(1.35em + .55vw); margin: 1.5em 0 0.25em; letter-spacing: -0.02em; }
-h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; letter-spacing: -0.015em; }
-h3 { font-size: 1.15rem; margin: 1.5rem 0 0.5rem; letter-spacing: -0.01em; }
-h4, h5, h6 { font-size: 1rem; margin: 1.25rem 0 0.5rem; }
+/* Sized in em against the 17px body, not rem against the 16px root: measured
+   in rem, h3 came out 1.08x the prose and h4 smaller than it. Every level now
+   steps visibly and none dips below the paragraph. */
+h1 { font-size: clamp(1.6em, 1.35em + .8vw, 2em); margin: 1.5em 0 0.25em; letter-spacing: -0.02em; }
+h2 { font-size: 1.5em; margin: 2rem 0 0.75rem; letter-spacing: -0.015em; }
+h3 { font-size: 1.2em; margin: 1.5rem 0 0.5rem; letter-spacing: -0.01em; }
+h4, h5, h6 { font-size: 1em; margin: 1.25rem 0 0.5rem; }
 
 /* Links */
 a {
@@ -132,7 +141,7 @@ header .site-title {
   display: inline-flex;
   align-items: center;
   gap: 0.45em;
-  font-weight: 300;
+  font-weight: 400;
   text-decoration: none;
   color: var(--tx);
   font-size: 1.15rem;
@@ -212,7 +221,9 @@ footer {
   padding-top: 1rem;
   border-top: 1px solid var(--ui);
   font-size: var(--font-small);
-  color: var(--tx-3);
+  /* --tx-3 is about 2.1:1 against the light theme's cream; fine for a
+     hairline, not for a line of text. */
+  color: var(--tx-2);
 }
 .footer-mark {
   width: 13px;
@@ -279,10 +290,11 @@ footer {
   .to-top { display: none; }
 }
 
-/* Post meta */
+/* Post meta. Same size as the index's date column, so the same information
+   looks the same on both pages. */
 .meta {
   color: var(--tx-2);
-  font-size: 1em;
+  font-size: var(--font-small);
   margin-bottom: 2rem;
 }
 
@@ -290,7 +302,7 @@ footer {
 .draft-badge {
   display: inline-block;
   font-size: var(--font-smaller);
-  font-weight: 500;
+  font-weight: var(--heading-weight);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--syn-orange);
@@ -442,7 +454,16 @@ footer {
 
 /* Index intro + post listing */
 .intro { color: var(--tx-2); margin: 0 0 2rem; }
-.section-label { margin-top: 1rem; margin-bottom: 1rem; color: var(--tx-2); font-weight: 400; }
+/* A label, not a faded heading: the list below is the page, this only names
+   it. Small, tracked and quiet, the way the draft badge is drawn. */
+.section-label {
+  margin: 1rem 0;
+  color: var(--tx-2);
+  font-size: var(--font-small);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
 .post-list {
   list-style: none;
   padding: 0;
@@ -591,7 +612,7 @@ a.img-original {
   border-top: 1px solid var(--ui);
   font-size: 0.9em;
 }
-.references h2 { font-size: 1.15rem; color: var(--tx-2); }
+.references h2 { font-size: 1.2em; color: var(--tx-2); }
 .reference-list {
   margin: 0.75rem 0 0 0;
   padding-left: 1.5rem;
