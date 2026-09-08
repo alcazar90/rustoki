@@ -28,7 +28,8 @@ use crate::config::Config;
 use crate::content::Source;
 use crate::feed::{FeedEntry, SitemapEntry};
 use crate::templates::{
-    IndexContext, PageContext, PageView, PostContext, PostListEntry, PostView, Render404Context,
+    IndexContext, PageContext, PageView, PostContext, PostListEntry, PostNeighbour, PostView,
+    Render404Context,
     RenderEnv, Templates,
 };
 
@@ -210,13 +211,37 @@ fn cmd_build(include_drafts: bool) -> Result<()> {
     // Sitemap rows: one per output URL.
     let mut sitemap_entries: Vec<SitemapEntry> = Vec::new();
 
+    // Posts in listing order (content::walk already sorted by date, newest
+    // first), so each post's neighbours are the rows beside it on the home
+    // page. Drafts are in or out of this list exactly as they are in or out
+    // of `sources`, so a `--drafts` preview links through them and a real
+    // build never does.
+    let posts: Vec<&Source> = sources
+        .iter()
+        .filter(|s| matches!(classify(s), SourceKind::Post))
+        .collect();
+    let mut post_index = 0usize;
+
     for source in &sources {
         let kind = classify(source);
         match kind {
             SourceKind::Post => {
                 let is_draft = source.frontmatter.draft.unwrap_or(false);
-                let outcome = render_and_write_post(&templates, &env, source, out_root, &images)
-                    .with_context(|| format!("emitting post {}", source.slug))?;
+                let (newer, older) = adjacent(&posts, post_index);
+                post_index += 1;
+                let neighbours = Neighbours {
+                    older: older.map(|s| neighbour(s)),
+                    newer: newer.map(|s| neighbour(s)),
+                };
+                let outcome = render_and_write_post(
+                    &templates,
+                    &env,
+                    source,
+                    neighbours,
+                    out_root,
+                    &images,
+                )
+                .with_context(|| format!("emitting post {}", source.slug))?;
                 post_count += 1;
                 total_bytes += outcome.bytes;
                 index_entries.push(PostListEntry {
@@ -365,19 +390,48 @@ struct PostOutcome {
     bytes: usize,
 }
 
+/// The items on either side of `items[i]`: `(before, after)`. Either is
+/// `None` at the corresponding end of the slice.
+fn adjacent<T>(items: &[T], i: usize) -> (Option<&T>, Option<&T>) {
+    let before = i.checked_sub(1).and_then(|j| items.get(j));
+    let after = items.get(i + 1);
+    (before, after)
+}
+
+/// A post's display title: the frontmatter title, or the slug when a post
+/// has none. The index listing and the page's own `<h1>` derive it the same
+/// way, so the foot-of-post links name a post exactly as its own page does.
+fn post_title(source: &Source) -> String {
+    source
+        .frontmatter
+        .title
+        .clone()
+        .unwrap_or_else(|| source.slug.clone())
+}
+
+fn neighbour(source: &Source) -> PostNeighbour {
+    PostNeighbour {
+        title: post_title(source),
+        slug: source.slug.clone(),
+    }
+}
+
+/// The posts on either side of the one being rendered, in listing order.
+struct Neighbours {
+    older: Option<PostNeighbour>,
+    newer: Option<PostNeighbour>,
+}
+
 fn render_and_write_post(
     templates: &Templates,
     env: &RenderEnv<'_>,
     source: &Source,
+    neighbours: Neighbours,
     out_root: &Path,
     images: &assets::ImageManifest,
 ) -> Result<PostOutcome> {
     let rendered = render::render(source, images, &env.site.url)?;
-    let title = source
-        .frontmatter
-        .title
-        .clone()
-        .unwrap_or_else(|| source.slug.clone());
+    let title = post_title(source);
     let date = source
         .frontmatter
         .date
@@ -410,6 +464,8 @@ fn render_and_write_post(
         lang,
         toc_html: rendered.toc_html,
         draft: source.frontmatter.draft.unwrap_or(false),
+        older: neighbours.older,
+        newer: neighbours.newer,
     };
     let ctx = PostContext {
         env: env.clone_borrowed(),
@@ -664,6 +720,16 @@ impl<'a> RenderEnv<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn adjacent_yields_the_items_on_either_side() {
+        let items = ["newest", "middle", "oldest"];
+        assert_eq!(adjacent(&items, 0), (None, Some(&"middle")));
+        assert_eq!(adjacent(&items, 1), (Some(&"newest"), Some(&"oldest")));
+        assert_eq!(adjacent(&items, 2), (Some(&"middle"), None));
+        // A lone post has nowhere to go in either direction.
+        assert_eq!(adjacent(&["only"], 0), (None, None));
+    }
 
     #[test]
     fn format_date_formats_iso_date() {

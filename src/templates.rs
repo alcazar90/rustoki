@@ -15,6 +15,16 @@ const PAGE_HTML: &str = include_str!("../templates/page.html");
 const INDEX_HTML: &str = include_str!("../templates/index.html");
 const NOT_FOUND_HTML: &str = include_str!("../templates/404.html");
 
+/// The post on either side of this one in the listing, enough to name it and
+/// link to it. Every post links to its neighbours at the foot of the page, so
+/// a reader who reaches the end is handed the next thing to read rather than
+/// the copyright line.
+#[derive(Debug, Clone, Serialize)]
+pub struct PostNeighbour {
+    pub title: String,
+    pub slug: String,
+}
+
 /// Per-post view-model passed into `post.html`.
 #[derive(Debug, Clone, Serialize)]
 pub struct PostView {
@@ -31,6 +41,11 @@ pub struct PostView {
     /// True when `frontmatter.draft` is set — only reachable via `ssg build
     /// --drafts`. Drives the "Draft" badge shown on the page.
     pub draft: bool,
+    /// The next post down the listing (earlier date) and the next one up
+    /// (later date). `None` at either end of the list; both `None` on a
+    /// one-post site, and the template then emits no navigation at all.
+    pub older: Option<PostNeighbour>,
+    pub newer: Option<PostNeighbour>,
 }
 
 /// Per-page view-model passed into `page.html`.
@@ -257,6 +272,8 @@ mod tests {
             lang: "en".to_string(),
             toc_html: String::new(),
             draft: false,
+            older: None,
+            newer: None,
         }
     }
 
@@ -310,6 +327,80 @@ mod tests {
                 post,
             })
             .unwrap()
+    }
+
+    #[test]
+    fn post_nav_links_both_neighbours() {
+        let templates = Templates::new().unwrap();
+        let cfg = fixture_config();
+        let mut post = fixture_post();
+        post.older = Some(PostNeighbour {
+            title: "First Steps".to_string(),
+            slug: "first-steps".to_string(),
+        });
+        post.newer = Some(PostNeighbour {
+            title: "What Came After".to_string(),
+            slug: "after".to_string(),
+        });
+        let html = templates
+            .render_post(&PostContext {
+                env: RenderEnv {
+                    site: &cfg,
+                    inline_css: "",
+                    year: 2026,
+                    margin: None,
+                },
+                post,
+            })
+            .unwrap();
+        assert!(
+            html.contains(r#"rel="prev" href="/posts/first-steps/""#),
+            "older post should be linked as rel=prev: {html}"
+        );
+        assert!(
+            html.contains(r#"rel="next" href="/posts/after/""#),
+            "newer post should be linked as rel=next: {html}"
+        );
+        assert!(html.contains("First Steps"), "older title missing: {html}");
+        assert!(html.contains("What Came After"), "newer title missing: {html}");
+        // The article's own clear-both pseudo-element must precede the nav,
+        // so a long last sidenote cannot run over it (see main.css).
+        let article_end = html.find("</article>").unwrap();
+        let nav = html.find(r#"<nav class="post-nav""#).unwrap();
+        assert!(article_end < nav, "post nav should follow the article: {html}");
+    }
+
+    #[test]
+    fn post_nav_is_omitted_on_a_lone_post() {
+        let html = render_with_body("<p>Only post.</p>");
+        assert!(
+            !html.contains("post-nav"),
+            "a post with no neighbours should carry no navigation: {html}"
+        );
+    }
+
+    #[test]
+    fn post_nav_keeps_one_side_when_the_other_is_missing() {
+        let templates = Templates::new().unwrap();
+        let cfg = fixture_config();
+        let mut post = fixture_post();
+        post.older = Some(PostNeighbour {
+            title: "First Steps".to_string(),
+            slug: "first-steps".to_string(),
+        });
+        let html = templates
+            .render_post(&PostContext {
+                env: RenderEnv {
+                    site: &cfg,
+                    inline_css: "",
+                    year: 2026,
+                    margin: None,
+                },
+                post,
+            })
+            .unwrap();
+        assert!(html.contains(r#"rel="prev""#), "older link missing: {html}");
+        assert!(!html.contains(r#"rel="next""#), "spurious newer link: {html}");
     }
 
     #[test]

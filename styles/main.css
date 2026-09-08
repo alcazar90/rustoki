@@ -298,6 +298,53 @@ footer {
   margin-bottom: 2rem;
 }
 
+/* Where a post ends: the posts on either side of it in the home listing,
+   so finishing one hands the reader the next rather than the copyright
+   line. Drawn from the same parts as that listing — the tracked label of
+   `.section-label`, the plain title that colours on hover — rather than as a
+   pair of buttons. Older keeps the left, newer the right, whichever of the
+   two exists; a rule as light as the footer's separates it from the prose.
+   Two columns even on a phone: at ~160px each a title merely wraps, and the
+   sides stay where a reader expects them. */
+.post-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 3.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--ui);
+}
+.post-nav a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  color: var(--tx);
+  text-decoration: none;
+}
+.post-nav-newer { grid-column: 2; text-align: right; }
+.post-nav-label {
+  color: var(--tx-2);
+  font-size: var(--font-smaller);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.post-nav-title {
+  line-height: 1.35;
+  text-underline-offset: 2px;
+  transition: color 0.15s ease;
+}
+.post-nav a:hover .post-nav-title { color: var(--accent); text-decoration: underline; }
+.post-nav a:focus { outline: none; }
+.post-nav a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+@media print {
+  .post-nav { display: none; }
+}
+
 /* Draft preview badge — only ever emitted by `ssg build --drafts`. */
 .draft-badge {
   display: inline-block;

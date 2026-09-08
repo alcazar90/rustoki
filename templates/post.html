@@ -6,6 +6,17 @@
   {% if post.toc_html %}{{ post.toc_html | safe }}{% endif %}
   {{ post.html | safe }}
 </article>
+{#- Where a post ends. The listing on the home page is ordered by date, so
+    "older" and "newer" are simply the rows on either side of this one there.
+    Emitted only when there is somewhere to go: a lone post ends at its last
+    line, not under an empty rule. rel=prev/next follow the chronological
+    sequence, which is what the listing already is. -#}
+{% if post.older or post.newer %}
+<nav class="post-nav" aria-label="Neighbouring posts">
+  {% if post.older %}<a class="post-nav-older" rel="prev" href="/posts/{{ post.older.slug }}/"><span class="post-nav-label">Older</span><span class="post-nav-title">{{ post.older.title }}</span></a>{% endif %}
+  {% if post.newer %}<a class="post-nav-newer" rel="next" href="/posts/{{ post.newer.slug }}/"><span class="post-nav-label">Newer</span><span class="post-nav-title">{{ post.newer.title }}</span></a>{% endif %}
+</nav>
+{% endif %}
 {#- The href does the scrolling, so this needs no script and behaves like
     every other in-page jump on the site: a plain anchor, which also moves
     keyboard focus to the header rather than leaving it stranded at the foot
