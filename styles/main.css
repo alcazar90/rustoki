@@ -144,7 +144,12 @@ header nav { display: flex; gap: 1rem; align-items: center; }
 header nav a { color: var(--tx-2); text-decoration: none; }
 header nav a:hover { color: var(--accent); }
 
-/* Theme toggle — a yin-yang that flips between the site's ink and paper colors */
+/* Theme toggle — a yin-yang drawn the way the rest of the site's own marks
+   are drawn: one warm `--stone`, no second colour. Filling the paper lobe
+   with `--bg` and the ink lobe with `--tx` (the only pure-ink fill anywhere
+   on the page) made a hard black-and-white disc sitting on cream; leaving
+   the paper lobe open lets the page itself be the paper, which is both
+   quieter and one fewer colour to keep in sync. */
 .appearance-toggle {
   position: relative;
   background: none;
@@ -155,8 +160,11 @@ header nav a:hover { color: var(--accent); }
   height: 22px;
   cursor: pointer;
   flex-shrink: 0;
+  color: var(--stone);
+  transition: color 0.2s;
   -webkit-tap-highlight-color: transparent;
 }
+.appearance-toggle:hover { color: var(--tx); }
 /* Invisible ~40px hit area without disturbing the header's flex layout */
 .appearance-toggle::before {
   content: "";
@@ -177,22 +185,21 @@ header nav a:hover { color: var(--accent); }
 }
 .appearance-toggle:hover svg { transform: rotate(calc(var(--turns, 0) * 180deg)) scale(1.1); }
 
-.toggle-ring {
-  fill: none;
-  stroke: var(--ui);
-  stroke-width: 1.5;
-  transition: stroke 0.2s;
-}
-.appearance-toggle:hover .toggle-ring { stroke: var(--tx-3); }
-.toggle-paper { fill: var(--bg); transition: fill 0.3s ease-in-out 0.1s; }
-.toggle-ink   { fill: var(--tx); transition: fill 0.3s ease-in-out 0.1s; }
+/* Both shapes take the button's own colour, so the hover state is one
+   declaration on the button rather than a fill and a stroke kept in step.
+   The rim closes the open lobe, so the mark still reads as a circle rather
+   than a drifting comma: 5 units of a 100-unit viewBox is ~1.1px at the
+   rendered 22px, the hairline weight the rest of the page's rules use. The
+   old 1.5 was thin enough to disappear, which is why the mark read as a
+   lone black blob. */
+.toggle-ring { fill: none; stroke: currentColor; stroke-width: 5; }
+.toggle-ink { fill: currentColor; }
 
 @media (prefers-reduced-motion: reduce) {
-  /* Keep the state change legible via color, drop all spatial motion */
+  /* The dot changing ends still tells you which way it went, so nothing is
+     lost by dropping the spatial motion. */
   .appearance-toggle svg { transition: none; }
   .appearance-toggle:hover svg { transform: rotate(calc(var(--turns, 0) * 180deg)); }
-  .toggle-ring { transition: none; }
-  .toggle-paper, .toggle-ink { transition: fill 0.15s ease; }
 }
 
 /* Footer */
