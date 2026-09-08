@@ -123,6 +123,10 @@ header {
   margin-bottom: 3rem;
   gap: 1rem;
   flex-wrap: wrap;
+  /* `.to-top` targets this as `#top`. Without a margin the jump parks the
+     header flush against the viewport edge, scrolling the body's own top
+     padding out of view; 2rem lands it exactly where the page starts. */
+  scroll-margin-top: 2rem;
 }
 header .site-title {
   display: inline-flex;
@@ -220,6 +224,60 @@ footer {
   transition: opacity 0.2s, transform 0.2s;
 }
 .footer-mark:hover { opacity: 1; transform: translateY(-1px); }
+
+/* Back to top, on post pages only: a long read is the only place the header
+   is far enough away to be worth a shortcut. The anchor does the scrolling on
+   its own, so the control works with no script at all; post.html's observer
+   only decides when to show it. Same paper-and-hairline material as `pre`,
+   rather than a new surface. */
+.to-top {
+  --to-top-size: 34px;
+  position: fixed;
+  bottom: 1.5rem;
+  /* Above 1150px the right gutter belongs to the sidenotes, so park clear of
+     their column. `right` places this box's right edge, so the note's own
+     outer offset (12rem wide + 2rem gap, the same arithmetic the notes
+     derive from) has to be walked back by the control's whole width plus a
+     gap, or it reaches back over the notes. Below about 1264px the notes run
+     to the viewport edge and there is nowhere left to park, so this falls
+     back to the corner and can overlap one; the opaque background is what
+     keeps that legible rather than muddy. */
+  right: max(1rem, calc(50% - 350px - 14rem - var(--to-top-size) - 0.5rem));
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--to-top-size);
+  height: var(--to-top-size);
+  border: 1px solid var(--ui);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--tx-2);
+  transition: opacity 0.25s ease, visibility 0.25s, color 0.15s, border-color 0.15s;
+}
+.to-top svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.to-top:hover { color: var(--stone); border-color: var(--tx-3); }
+.to-top:focus { outline: none; }
+.to-top:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* Script-only states. Without JS the control never picks up `.js` and simply
+   stays visible, which is the right failure: an always-there shortcut beats
+   one that never appears. */
+.to-top.js { opacity: 0; visibility: hidden; }
+.to-top.js.shown { opacity: 1; visibility: visible; }
+@media (prefers-reduced-motion: reduce) {
+  .to-top { transition: none; }
+}
+@media print {
+  .to-top { display: none; }
+}
 
 /* Post meta */
 .meta {
