@@ -65,10 +65,18 @@
     document.documentElement.style.setProperty('--turns',turns+1);
   }
   b.addEventListener('click',toggleTheme);
+  // Both single-key shortcuts live here rather than one per template, so the
+  // "not while the reader is typing" guard is written once. Shifted letters,
+  // so neither collides with a browser's own single-key bindings.
   document.addEventListener('keydown',function(e){
-    if(e.key==='D'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){
-      toggleTheme();
-    }
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    var t=document.activeElement.tagName;
+    if(t==='INPUT'||t==='TEXTAREA')return;
+    if(e.key==='D'){toggleTheme();return;}
+    // Only post pages carry a back-to-top control; everywhere else this is a
+    // no-op. Going through the anchor's own click keeps one code path, so the
+    // key lands exactly where the button does.
+    if(e.key==='T'){var u=document.querySelector('.to-top');if(u)u.click();}
   });
 })();
 </script>
