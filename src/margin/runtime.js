@@ -30,9 +30,17 @@ function locate(beats,elapsed){
   for(var k=0;k<beats.length;k++){acc+=beats[k][0];if(elapsed<acc)return{k:k,rem:acc-elapsed};}
   return null;  // the crossing finished during the time we were away
 }
-function set(y,op,dur,fade){
+// The stylesheet's ease-out is right for a figure settling into a stop, but
+// his legs cycle at one fixed rate, so under a curve that spends the first
+// and last stretch of a 7s beat nearly still, the feet slide. Travelling
+// beats get a near-linear curve instead; standing beats hand the timing back
+// to the stylesheet. Two functions, because two properties transition: the
+// second keeps opacity on the dissolve's own ease.
+var WALK_EASE='cubic-bezier(.25,.1,.75,.9), ease-in-out';
+function set(y,op,dur,fade,walk){
   var t='translateY('+(-y*D.s)+'px)',d=dur+'ms, '+fade+'ms';
   for(var k=0;k<mv.length;k++){
+    mv[k].style.transitionTimingFunction=walk?WALK_EASE:'';
     mv[k].style.transitionDuration=d;mv[k].style.transform=t;mv[k].style.opacity=op;
   }
 }
@@ -44,7 +52,7 @@ function show(pose,walk){
 function apply(b,dur,fade){
   show(b[4],!!b[3]);
   r.classList.toggle('mg-lit',!!b[5]);
-  set(b[1],b[2],dur,fade===undefined?b[6]:fade);
+  set(b[1],b[2],dur,fade===undefined?b[6]:fade,!!b[3]);
 }
 function pick(){
   var n=Math.random()*D.t,a=0;
