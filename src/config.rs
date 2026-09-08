@@ -128,6 +128,16 @@ pub struct Config {
     /// Optional. Absent means the site ships no margin figure at all.
     #[serde(default)]
     pub margin: Option<MarginConfig>,
+    /// Whether the home page draws the raked-sand garden behind the profile
+    /// row (see `sandgarden`). On by default; `garden = false` leaves the
+    /// space beside the avatar empty. It never shows without an `avatar`
+    /// regardless, since the row it decorates collapses without one.
+    #[serde(default = "default_true")]
+    pub garden: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl Config {
@@ -195,6 +205,22 @@ description = "D"
         );
         let config = Config::load(&path).unwrap();
         assert!(config.menu.is_empty());
+    }
+
+    #[test]
+    fn garden_defaults_on_and_can_be_switched_off() {
+        let base = r#"
+title = "T"
+url = "U"
+author = "A"
+description = "D"
+"#;
+        let config = Config::load(&write_temp(base)).unwrap();
+        assert!(config.garden, "garden should default to on");
+
+        let off = format!("{base}\ngarden = false\n");
+        let config = Config::load(&write_temp(&off)).unwrap();
+        assert!(!config.garden);
     }
 
     #[test]

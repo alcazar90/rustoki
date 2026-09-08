@@ -166,6 +166,7 @@ mod tests {
             menu: Vec::new(),
             giscus: None,
             margin: None,
+            garden: true,
         }
     }
 

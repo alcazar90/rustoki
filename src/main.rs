@@ -286,15 +286,20 @@ fn cmd_build(include_drafts: bool) -> Result<()> {
     // Purely decorative — one terrain landmark per post (keyed on its slug,
     // so it's stable and unaffected by the others), over an ambient texture
     // seeded from the author. Never fails the build: an empty string here
-    // just means the template omits the container.
-    let garden_seeds: Vec<sandgarden::Seed<'_>> = index_entries
-        .iter()
-        .map(|p| sandgarden::Seed {
-            key: p.slug.as_str(),
-            reading_minutes: p.reading_time,
-        })
-        .collect();
-    let garden = sandgarden::build(&garden_seeds);
+    // just means the template omits the container, which is also how
+    // `garden = false` in the config switches it off.
+    let garden = if config.garden {
+        let garden_seeds: Vec<sandgarden::Seed<'_>> = index_entries
+            .iter()
+            .map(|p| sandgarden::Seed {
+                key: p.slug.as_str(),
+                reading_minutes: p.reading_time,
+            })
+            .collect();
+        sandgarden::build(&garden_seeds)
+    } else {
+        String::new()
+    };
     let index_ctx = IndexContext {
         env: env.clone_borrowed(),
         posts: &index_entries,

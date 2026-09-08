@@ -263,6 +263,7 @@ mod tests {
             ],
             giscus: None,
             margin: None,
+            garden: true,
         }
     }
 

@@ -4,6 +4,9 @@ author = "Ada Lovelace"
 description = "A demo site showing off rustoki's default look and features."
 footnote = 'Built with <a href="https://github.com/alcazar90/rustoki">rustoki</a>.'
 avatar = "/img/avatar.png"
+# The raked-sand garden beside the avatar is on by default; uncomment to
+# leave that space empty.
+garden = false
 
 # Placeholder links — every field is optional, and the ones left empty simply
 # don't render an icon.
