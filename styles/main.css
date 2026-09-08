@@ -371,45 +371,42 @@ footer {
   vertical-align: middle;
 }
 
-/* Profile avatar + social links. Icons here are solid third-party brand
-   marks (each platform's own logo treatment), unlike the site's own line-art
-   icon set (.brand-mark, .footer-mark, .appearance-toggle) — a deliberate
-   split, not an inconsistency. */
-.profile-row {
+/* Home profile row: the avatar on the left, the site's line about itself
+   and the social links beside it, the whole row on a bed of raked sand.
+   Icons here are solid third-party brand marks (each platform's own logo
+   treatment), unlike the site's own line-art icon set (.brand-mark,
+   .footer-mark, .appearance-toggle) — a deliberate split, not an
+   inconsistency. */
+.profile {
   position: relative;
-  margin: 0 0 1.5rem;
-  /* Where the icon column starts and ends, measured from the content
-     column's left edge: the avatar's own left padding, the avatar, the gap,
-     less the link's horizontal padding so the offset lands on the glyphs
-     rather than on their enlarged hit areas. `.social-links` positions
-     itself with this and `.profile-decor` masks itself with it, so the two
-     cannot drift apart the way two hand-copied sums would. */
-  --icon-col: calc(1.85rem + 128px + 14px - 0.5rem);
-  --icon-col-w: 32px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 1.5rem;
+  align-items: center;
+  /* The band is 128px tall and starts at the row's top edge; the row is at
+     least that tall and centres its contents on it, so the avatar sits
+     level with the garden whatever the sentence's line count. */
+  --band-h: 128px;
+  min-height: var(--band-h);
+  margin: 0 0 3rem;
 }
-.profile-row .profile { margin-bottom: 0; }
-/* Lays a generated contour pattern (see `topomap.rs`) across the whole
-   content column, so the avatar sits on a band of terrain rather than next
-   to a patch of it. The avatar is opaque and hides the contours behind it by
-   itself; the social glyphs are `--tx-3` hairlines of much the same weight
-   as a contour line, so the mask opens a soft hole over just that column.
-   Hidden below a width where the avatar and icons would leave too little of
-   the band showing to read as a pattern. */
+/* Lays a generated raked-sand garden (see `sandgarden.rs`) across the
+   whole content column behind the row. The drawing anchors to the right
+   edge and the mask fades it in from the left, so the stones and their
+   rings sit fully visible in the corner and the grooves thin out under the
+   sentence rather than competing with it. Hidden below a width where the
+   avatar and sentence would leave too little of the bed showing to read as
+   a pattern. */
 .profile-decor {
   position: absolute;
   left: 0;
   right: 0;
   top: 0;
-  height: 128px;
+  height: var(--band-h);
   z-index: 0;
-  -webkit-mask-image: var(--icon-col-mask);
-  mask-image: var(--icon-col-mask);
-  --icon-col-mask: linear-gradient(
-    to right,
-    #000 0 calc(var(--icon-col) - 0.75rem),
-    rgba(0, 0, 0, 0.12) var(--icon-col) calc(var(--icon-col) + var(--icon-col-w)),
-    #000 calc(var(--icon-col) + var(--icon-col-w) + 1.25rem) 100%
-  );
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, transparent 30%, #000 72%);
+  mask-image: linear-gradient(to right, transparent 30%, #000 72%);
 }
 .profile-decor svg {
   width: 100%;
@@ -419,13 +416,12 @@ footer {
      --bg either way) — --tx-3 is tuned for dark-mode-only faint text and
      nearly vanishes against the light theme's pale cream background. */
   color: var(--stone);
-  /* Each contour path carries `--i` (its quantile level, 0-4, see
-     topomap.rs). Light needs a stronger base/step than dark to clear the
+  /* Each path carries `--i` (its level, 0-4, see sandgarden.rs: the bed
+     of grooves at 0, the rings around a stone climbing inward, the stone
+     itself at 4). Light needs a stronger base/step than dark to clear the
      same felt contrast: the same alpha reads much fainter against the
      light theme's pale --bg than against the near-black dark one, which is
-     what made the pattern nearly invisible in light mode. The resulting
-     ramp (faint inner rings, crisper outer one) also happens to mimic a
-     real topo map's bolded index contours. */
+     what made the pattern nearly invisible in light mode. */
   --topo-op-base: 0.32;
   --topo-op-step: 0.09;
 }
@@ -436,27 +432,37 @@ footer {
 .profile-decor svg path {
   opacity: calc(var(--topo-op-base) + var(--topo-op-step) * var(--i));
 }
-@media (max-width: 640px) {
-  .profile-decor { display: none; }
-}
-.profile {
+.avatar {
   position: relative;
-  /* Both this and `.profile-decor` are positioned, and this one comes first
-     in the markup, so without an explicit order the decoration would paint
-     on top of the avatar rather than behind it. */
   z-index: 1;
-  display: inline-block;
-  margin: 0 0 1.5rem;
-  padding-left: 1.85rem;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center top;
+  border: none;
+  display: block;
+}
+.profile-text {
+  position: relative;
+  z-index: 1;
+}
+.profile-lede {
+  margin: 0;
+  color: var(--tx-2);
+  /* Short enough that the sentence ends before the garden's stone field
+     begins (see STONE_X_MIN in sandgarden.rs). */
+  max-width: 32ch;
+  text-wrap: pretty;
 }
 .social-links {
-  position: absolute;
-  left: var(--icon-col);
-  top: 0;
-  bottom: 0;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  /* Pulls the first glyph back onto the sentence's left edge, undoing the
+     link's own hit-area padding. */
+  margin-left: -0.5rem;
 }
 .social-links a {
   color: var(--tx-3);
@@ -467,7 +473,7 @@ footer {
   line-height: 1;
   /* Enlarges the click/tap target well past the 16px glyph without
      changing its rendered position or the visual gap between icons. */
-  padding: 0.4rem 0.5rem;
+  padding: 0.5rem;
 }
 .social-links a:hover { color: var(--tx); }
 .social-links a:focus { outline: none; }
@@ -481,23 +487,53 @@ footer {
    open silhouettes; sized down slightly so it reads at the same optical
    weight as the rest of the stack instead of dominating it. */
 .social-links svg.icon-dense { width: 14px; height: 14px; }
+/* No avatar: no band to centre on, so the row is as tall as its text. */
 .profile.no-avatar {
-  display: block;
-  padding-left: 0;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
 }
-.profile.no-avatar .social-links {
-  position: static;
-  flex-direction: row;
+@media (max-width: 640px) {
+  .profile-decor { display: none; }
+  .profile {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 1rem;
+    min-height: 0;
+    margin-bottom: 2.5rem;
+  }
+  .profile-lede { max-width: none; }
 }
-.avatar {
-  width: 128px;
-  height: 128px;
-  border-radius: 50%;
-  object-fit: cover;
-  object-position: center top;
-  border: none;
-  display: block;
+
+/* The newest post, previewed. Everything here is sized against the body
+   rather than the heading scale: the title is one step up and regular in
+   colour, the meta and excerpt one step down and quiet, so the block reads
+   as a listing entry given room rather than as a second page heading. */
+.latest { margin: 0 0 0.5rem; }
+.latest .section-label { margin: 0 0 1rem; }
+.latest-title {
+  font-size: 1.35em;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.015em;
 }
+.latest-title a { color: var(--tx); text-decoration: none; }
+.latest-title a:hover { color: var(--accent); text-decoration: underline; }
+.latest-meta {
+  margin: 0 0 0.75rem;
+  color: var(--tx-2);
+  font-size: var(--font-small);
+  font-variant-numeric: tabular-nums;
+}
+.latest-excerpt {
+  margin: 0;
+  color: var(--tx-2);
+  max-width: 60ch;
+  text-wrap: pretty;
+}
+.keep-reading {
+  color: var(--tx-2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.keep-reading:hover { color: var(--accent); text-decoration: underline; }
 
 /* About page floating avatar */
 .about-avatar {
@@ -511,8 +547,7 @@ footer {
   shape-outside: circle();
 }
 
-/* Index intro + post listing */
-.intro { color: var(--tx-2); margin: 0 0 2rem; }
+/* Index post listing */
 /* A label, not a faded heading: the list below is the page, this only names
    it. Small, tracked and quiet, the way the draft badge is drawn. */
 .section-label {

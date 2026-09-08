@@ -67,6 +67,12 @@ pub struct PostListEntry {
     pub date: String,
     pub date_display: String,
     pub draft: bool,
+    pub reading_time: u32,
+    /// The post's own frontmatter description, if it has one. Unlike the
+    /// `<meta>` description this never falls back to the site's: the home
+    /// page's "Latest" block quotes it as an excerpt, and the site's line
+    /// about itself is not an excerpt of anything.
+    pub description: Option<String>,
 }
 
 /// Render-time inputs that aren't owned by the markdown content itself.
@@ -101,9 +107,9 @@ pub struct PageContext<'a> {
 pub struct IndexContext<'a> {
     pub env: RenderEnv<'a>,
     pub posts: &'a [PostListEntry],
-    /// Pre-rendered `<svg>` contour decoration, or empty string when the
-    /// field turned out degenerate. See `topomap::build`.
-    pub topomap: &'a str,
+    /// Pre-rendered `<svg>` raked-sand decoration for the profile row, or
+    /// empty string to omit it. See `sandgarden::build`.
+    pub garden: &'a str,
 }
 
 /// Full context handed to `render_404`. Minimal — the 404 page only needs
@@ -204,7 +210,7 @@ impl Templates {
             description => ctx.env.site.description.clone(),
             lang => "en",
             posts => ctx.posts,
-            topomap => ctx.topomap,
+            garden => ctx.garden,
         })
         .context("rendering index.html")
     }
@@ -431,7 +437,7 @@ mod tests {
                     margin: None,
                 },
                 posts: &[],
-                topomap: "",
+                garden: "",
             })
             .unwrap();
         assert!(
@@ -593,6 +599,8 @@ mod tests {
                 date: "2024-10-02".to_string(),
                 date_display: "Oct 2, 2024".to_string(),
                 draft: false,
+                reading_time: 4,
+                description: Some("Notes on reward.".to_string()),
             },
             PostListEntry {
                 title: "Older Thoughts".to_string(),
@@ -600,12 +608,14 @@ mod tests {
                 date: "2022-01-01".to_string(),
                 date_display: "Jan 1, 2022".to_string(),
                 draft: false,
+                reading_time: 2,
+                description: None,
             },
         ];
         let ctx = IndexContext {
             env,
             posts: &posts,
-            topomap: "",
+            garden: "",
         };
         let html = templates.render_index(&ctx).unwrap();
         assert!(html.contains("Test Site"), "missing site title in: {html}");
@@ -627,6 +637,42 @@ mod tests {
             html.contains("post-list"),
             "missing post-list class in: {html}"
         );
+        // The newest post is also previewed in the "Latest" block, with its
+        // reading time and description; older ones are only listed.
+        assert!(html.contains("class=\"latest\""), "missing latest block in: {html}");
+        assert!(html.contains("4 min read"), "missing reading time in: {html}");
+        assert!(html.contains("Notes on reward."), "missing excerpt in: {html}");
+        assert_eq!(html.matches("Keep reading").count(), 1, "one excerpt only: {html}");
+    }
+
+    #[test]
+    fn latest_block_omits_excerpt_when_post_has_no_description() {
+        let templates = Templates::new().unwrap();
+        let cfg = fixture_config();
+        let env = RenderEnv {
+            site: &cfg,
+            inline_css: "",
+            year: 2026,
+            margin: None,
+        };
+        let posts = vec![PostListEntry {
+            title: "Bare".to_string(),
+            slug: "bare".to_string(),
+            date: "2024-10-02".to_string(),
+            date_display: "Oct 2, 2024".to_string(),
+            draft: false,
+            reading_time: 1,
+            description: None,
+        }];
+        let ctx = IndexContext {
+            env,
+            posts: &posts,
+            garden: "",
+        };
+        let html = templates.render_index(&ctx).unwrap();
+        assert!(html.contains("class=\"latest\""), "missing latest block in: {html}");
+        assert!(!html.contains("Keep reading"), "excerpt without description in: {html}");
+        assert!(html.contains("1 min read"), "missing reading time in: {html}");
     }
 
     #[test]
@@ -642,7 +688,7 @@ mod tests {
         let ctx = IndexContext {
             env,
             posts: &[],
-            topomap: "",
+            garden: "",
         };
         let html = templates.render_index(&ctx).unwrap();
         // Header link still present even when there are no posts.

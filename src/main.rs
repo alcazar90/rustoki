@@ -22,7 +22,7 @@ mod margin;
 mod render;
 mod serve;
 mod templates;
-mod topomap;
+mod sandgarden;
 
 use crate::config::Config;
 use crate::content::Source;
@@ -250,6 +250,8 @@ fn cmd_build(include_drafts: bool) -> Result<()> {
                     date: outcome.date.clone(),
                     date_display: outcome.date_display.clone(),
                     draft: is_draft,
+                    reading_time: outcome.reading_time,
+                    description: outcome.description.clone(),
                 });
                 // Drafts are rendered for local preview but never enter the
                 // Atom feed or sitemap — those represent what's published.
@@ -285,12 +287,18 @@ fn cmd_build(include_drafts: bool) -> Result<()> {
     // so it's stable and unaffected by the others), over an ambient texture
     // seeded from the author. Never fails the build: an empty string here
     // just means the template omits the container.
-    let topomap_slugs: Vec<&str> = index_entries.iter().map(|p| p.slug.as_str()).collect();
-    let topomap = topomap::build(&config.author, &topomap_slugs).unwrap_or_default();
+    let garden_seeds: Vec<sandgarden::Seed<'_>> = index_entries
+        .iter()
+        .map(|p| sandgarden::Seed {
+            key: p.slug.as_str(),
+            reading_minutes: p.reading_time,
+        })
+        .collect();
+    let garden = sandgarden::build(&garden_seeds);
     let index_ctx = IndexContext {
         env: env.clone_borrowed(),
         posts: &index_entries,
-        topomap: &topomap,
+        garden: &garden,
     };
     let index_html = templates
         .render_index(&index_ctx)
@@ -388,6 +396,9 @@ struct PostOutcome {
     date_display: String,
     body_html: String,
     bytes: usize,
+    reading_time: u32,
+    /// The frontmatter description only — see `PostListEntry::description`.
+    description: Option<String>,
 }
 
 /// The items on either side of `items[i]`: `(before, after)`. Either is
@@ -453,11 +464,12 @@ fn render_and_write_post(
     // original via PostView.
     let body_html = rendered.html.clone();
 
+    let rendered_reading_time = rendered.reading_time_minutes;
     let view = PostView {
         title: title.clone(),
         date: date.clone(),
         date_display: date_display.clone(),
-        reading_time: rendered.reading_time_minutes,
+        reading_time: rendered_reading_time,
         html: rendered.html,
         slug: source.slug.clone(),
         description,
@@ -485,6 +497,8 @@ fn render_and_write_post(
         date_display,
         body_html,
         bytes,
+        reading_time: rendered_reading_time,
+        description: source.frontmatter.description.clone(),
     })
 }
 
