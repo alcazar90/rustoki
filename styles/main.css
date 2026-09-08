@@ -303,8 +303,11 @@ footer {
 }
 
 /* Post meta. Same size as the index's date column, so the same information
-   looks the same on both pages. */
-.meta {
+   looks the same on both pages. Not `.meta`: syntect emits its `meta.*`
+   scopes as a bare `meta` class on highlighter spans (`meta group`,
+   `meta function closure`, ...), and a rule by that name shrank and greyed
+   every nested group inside a code block. */
+.post-meta {
   color: var(--tx-2);
   font-size: var(--font-small);
   margin-bottom: 2rem;
