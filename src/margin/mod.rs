@@ -224,22 +224,28 @@ pub fn build(cfg: &MarginConfig) -> Option<Margin> {
     );
     if let Some((lx, ly)) = ch.light {
         // The pool is sized off the figure so a bigger character throws a
-        // bigger light without anything being re-tuned by hand.
+        // bigger light without anything being re-tuned by hand. Kept to a
+        // pool under his feet rather than a stage light: at 4.7 widths it
+        // reached the edge of the prose on narrower desktop windows.
         let _ = write!(
             vars,
             ";--mg-lx:{};--mg-ly:{};--mg-lw:{};--mg-lh:{}",
             px(lx as f32 * scale),
             px(ly as f32 * scale),
-            px(ch.w as f32 * 4.7 * scale),
-            px(ch.h as f32 * 2.0 * scale),
+            px(ch.w as f32 * 3.5 * scale),
+            px(ch.h as f32 * 1.6 * scale),
         );
     }
     if let Some(p) = &ch.prop {
+        // Position and size both go out: the prop's shadow is laid out from
+        // them in the stylesheet, the way the figure's is from its own box.
         let _ = write!(
             vars,
-            ";--mg-px:{};--mg-py:{}",
+            ";--mg-px:{};--mg-py:{};--mg-pw:{};--mg-ph:{}",
             px(p.x as f32 * scale),
-            px(p.y as f32 * scale)
+            px(p.y as f32 * scale),
+            px(p.sprite.w as f32 * scale),
+            px(p.sprite.h as f32 * scale),
         );
     }
 
@@ -248,6 +254,7 @@ pub fn build(cfg: &MarginConfig) -> Option<Margin> {
         stage.push_str(r#"<div class="mg-aura"><i></i></div>"#);
     }
     if let Some(p) = &ch.prop {
+        stage.push_str(r#"<i class="mg-prop-shadow"></i>"#);
         let _ = write!(
             stage,
             r##"<svg class="mg-prop" viewBox="0 0 {w} {h}" width="{sw}" height="{sh}"><use href="#mg-prop" width="{w}" height="{h}"/></svg>"##,

@@ -28,7 +28,19 @@
     "Roboto Mono", Menlo, Monaco, Consolas, monospace;
   --font-small:   0.875em;
   --font-smaller: 0.8em;
-  --heading-weight: 500;
+  /* Two weights on the whole page: this one for anything that has to hold
+     its own against body text, 400 for everything else. 500 in the system
+     font read as slightly darker prose rather than a heading; 300 for the
+     site title was thin on macOS and silently 400 on the fallbacks. */
+  --heading-weight: 600;
+  /* Head margin: the space between the browser's chrome and the site title.
+     Fixed at 2rem the title sat close enough to the toolbar to read as one
+     more row of it. The vw term makes the margin behave like the column's
+     own side gutters: it grows with the screen (~45px at 1400px, ~53px at
+     1920px) and gives nothing away on a phone, where the 2rem floor holds. Both
+     the body's padding and the header's scroll target read this, so the
+     back-to-top jump always lands exactly where the page starts. */
+  --page-top: max(2rem, calc(1.5rem + 1.5vw));
 
   color-scheme: light;
 }
@@ -61,14 +73,16 @@ html { background: var(--bg); }
 body {
   font-family: var(--font-content);
   font-size: 17px;
-  line-height: 1.5;
+  /* ~78 characters to the line at this size and column; a little more lead
+     loosens the block without touching the width everything derives from. */
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   color: var(--tx);
   background: var(--bg);
   max-width: 700px;
   margin: 0 auto;
-  padding: 2rem clamp(20px, 4vw, 2rem);
+  padding: var(--page-top) clamp(20px, 4vw, 2rem) 2rem;
 }
 
 /* Headings */
@@ -77,10 +91,13 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.25;
   font-weight: var(--heading-weight);
 }
-h1 { font-size: calc(1.35em + .55vw); margin: 1.5em 0 0.25em; letter-spacing: -0.02em; }
-h2 { font-size: 1.35rem; margin: 2rem 0 0.75rem; letter-spacing: -0.015em; }
-h3 { font-size: 1.15rem; margin: 1.5rem 0 0.5rem; letter-spacing: -0.01em; }
-h4, h5, h6 { font-size: 1rem; margin: 1.25rem 0 0.5rem; }
+/* Sized in em against the 17px body, not rem against the 16px root: measured
+   in rem, h3 came out 1.08x the prose and h4 smaller than it. Every level now
+   steps visibly and none dips below the paragraph. */
+h1 { font-size: clamp(1.6em, 1.35em + .8vw, 2em); margin: 1.5em 0 0.25em; letter-spacing: -0.02em; }
+h2 { font-size: 1.5em; margin: 2rem 0 0.75rem; letter-spacing: -0.015em; }
+h3 { font-size: 1.2em; margin: 1.5rem 0 0.5rem; letter-spacing: -0.01em; }
+h4, h5, h6 { font-size: 1em; margin: 1.25rem 0 0.5rem; }
 
 /* Links */
 a {
@@ -120,15 +137,23 @@ header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 3rem;
+  /* A little more than the 3rem it had: the header is the quietest thing on
+     the page, regular weight and no rule, and space is what gives it
+     standing without making it heavier. */
+  margin-bottom: 3.5rem;
   gap: 1rem;
   flex-wrap: wrap;
+  /* `.to-top` targets this as `#top`. Without a margin the jump parks the
+     header flush against the viewport edge, scrolling the body's own top
+     padding out of view; the same value as that padding lands it exactly
+     where the page starts. */
+  scroll-margin-top: var(--page-top);
 }
 header .site-title {
   display: inline-flex;
   align-items: center;
   gap: 0.45em;
-  font-weight: 300;
+  font-weight: 400;
   text-decoration: none;
   color: var(--tx);
   font-size: 1.15rem;
@@ -144,7 +169,12 @@ header nav { display: flex; gap: 1rem; align-items: center; }
 header nav a { color: var(--tx-2); text-decoration: none; }
 header nav a:hover { color: var(--accent); }
 
-/* Theme toggle — a yin-yang that flips between the site's ink and paper colors */
+/* Theme toggle — a yin-yang drawn the way the rest of the site's own marks
+   are drawn: one warm `--stone`, no second colour. Filling the paper lobe
+   with `--bg` and the ink lobe with `--tx` (the only pure-ink fill anywhere
+   on the page) made a hard black-and-white disc sitting on cream; leaving
+   the paper lobe open lets the page itself be the paper, which is both
+   quieter and one fewer colour to keep in sync. */
 .appearance-toggle {
   position: relative;
   background: none;
@@ -155,8 +185,11 @@ header nav a:hover { color: var(--accent); }
   height: 22px;
   cursor: pointer;
   flex-shrink: 0;
+  color: var(--stone);
+  transition: color 0.2s;
   -webkit-tap-highlight-color: transparent;
 }
+.appearance-toggle:hover { color: var(--tx); }
 /* Invisible ~40px hit area without disturbing the header's flex layout */
 .appearance-toggle::before {
   content: "";
@@ -177,22 +210,21 @@ header nav a:hover { color: var(--accent); }
 }
 .appearance-toggle:hover svg { transform: rotate(calc(var(--turns, 0) * 180deg)) scale(1.1); }
 
-.toggle-ring {
-  fill: none;
-  stroke: var(--ui);
-  stroke-width: 1.5;
-  transition: stroke 0.2s;
-}
-.appearance-toggle:hover .toggle-ring { stroke: var(--tx-3); }
-.toggle-paper { fill: var(--bg); transition: fill 0.3s ease-in-out 0.1s; }
-.toggle-ink   { fill: var(--tx); transition: fill 0.3s ease-in-out 0.1s; }
+/* Both shapes take the button's own colour, so the hover state is one
+   declaration on the button rather than a fill and a stroke kept in step.
+   The rim closes the open lobe, so the mark still reads as a circle rather
+   than a drifting comma: 5 units of a 100-unit viewBox is ~1.1px at the
+   rendered 22px, the hairline weight the rest of the page's rules use. The
+   old 1.5 was thin enough to disappear, which is why the mark read as a
+   lone black blob. */
+.toggle-ring { fill: none; stroke: currentColor; stroke-width: 5; }
+.toggle-ink { fill: currentColor; }
 
 @media (prefers-reduced-motion: reduce) {
-  /* Keep the state change legible via color, drop all spatial motion */
+  /* The dot changing ends still tells you which way it went, so nothing is
+     lost by dropping the spatial motion. */
   .appearance-toggle svg { transition: none; }
   .appearance-toggle:hover svg { transform: rotate(calc(var(--turns, 0) * 180deg)); }
-  .toggle-ring { transition: none; }
-  .toggle-paper, .toggle-ink { transition: fill 0.15s ease; }
 }
 
 /* Footer */
@@ -201,7 +233,9 @@ footer {
   padding-top: 1rem;
   border-top: 1px solid var(--ui);
   font-size: var(--font-small);
-  color: var(--tx-3);
+  /* --tx-3 is about 2.1:1 against the light theme's cream; fine for a
+     hairline, not for a line of text. */
+  color: var(--tx-2);
 }
 .footer-mark {
   width: 13px;
@@ -214,18 +248,123 @@ footer {
 }
 .footer-mark:hover { opacity: 1; transform: translateY(-1px); }
 
-/* Post meta */
-.meta {
+/* Back to top, on post pages only: a long read is the only place the header
+   is far enough away to be worth a shortcut. The anchor does the scrolling on
+   its own, so the control works with no script at all; post.html's observer
+   only decides when to show it. Same paper-and-hairline material as `pre`,
+   rather than a new surface. */
+.to-top {
+  --to-top-size: 34px;
+  position: fixed;
+  bottom: 1.5rem;
+  /* Above 1150px the right gutter belongs to the sidenotes, so park clear of
+     their column. `right` places this box's right edge, so the note's own
+     outer offset (12rem wide + 2rem gap, the same arithmetic the notes
+     derive from) has to be walked back by the control's whole width plus a
+     gap, or it reaches back over the notes. Below about 1264px the notes run
+     to the viewport edge and there is nowhere left to park, so this falls
+     back to the corner and can overlap one; the opaque background is what
+     keeps that legible rather than muddy. */
+  right: max(1rem, calc(50% - 350px - 14rem - var(--to-top-size) - 0.5rem));
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--to-top-size);
+  height: var(--to-top-size);
+  border: 1px solid var(--ui);
+  border-radius: 50%;
+  background: var(--bg);
   color: var(--tx-2);
-  font-size: 1em;
+  transition: opacity 0.25s ease, visibility 0.25s, color 0.15s, border-color 0.15s;
+}
+.to-top svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.to-top:hover { color: var(--stone); border-color: var(--tx-3); }
+.to-top:focus { outline: none; }
+.to-top:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* Script-only states. Without JS the control never picks up `.js` and simply
+   stays visible, which is the right failure: an always-there shortcut beats
+   one that never appears. */
+.to-top.js { opacity: 0; visibility: hidden; }
+.to-top.js.shown { opacity: 1; visibility: visible; }
+@media (prefers-reduced-motion: reduce) {
+  .to-top { transition: none; }
+}
+@media print {
+  .to-top { display: none; }
+}
+
+/* Post meta. Same size as the index's date column, so the same information
+   looks the same on both pages. Not `.meta`: syntect emits its `meta.*`
+   scopes as a bare `meta` class on highlighter spans (`meta group`,
+   `meta function closure`, ...), and a rule by that name shrank and greyed
+   every nested group inside a code block. */
+.post-meta {
+  color: var(--tx-2);
+  font-size: var(--font-small);
   margin-bottom: 2rem;
+}
+
+/* Where a post ends: the posts on either side of it in the home listing,
+   so finishing one hands the reader the next rather than the copyright
+   line. Drawn from the same parts as that listing — the tracked label of
+   `.section-label`, the plain title that colours on hover — rather than as a
+   pair of buttons. Older keeps the left, newer the right, whichever of the
+   two exists; a rule as light as the footer's separates it from the prose.
+   Two columns even on a phone: at ~160px each a title merely wraps, and the
+   sides stay where a reader expects them. */
+.post-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 3.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--ui);
+}
+.post-nav a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  color: var(--tx);
+  text-decoration: none;
+}
+.post-nav-newer { grid-column: 2; text-align: right; }
+.post-nav-label {
+  color: var(--tx-2);
+  font-size: var(--font-smaller);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.post-nav-title {
+  line-height: 1.35;
+  text-underline-offset: 2px;
+  transition: color 0.15s ease;
+}
+.post-nav a:hover .post-nav-title { color: var(--accent); text-decoration: underline; }
+.post-nav a:focus { outline: none; }
+.post-nav a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+@media print {
+  .post-nav { display: none; }
 }
 
 /* Draft preview badge — only ever emitted by `ssg build --drafts`. */
 .draft-badge {
   display: inline-block;
   font-size: var(--font-smaller);
-  font-weight: 500;
+  font-weight: var(--heading-weight);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--syn-orange);
@@ -235,26 +374,42 @@ footer {
   vertical-align: middle;
 }
 
-/* Profile avatar + social links. Icons here are solid third-party brand
-   marks (each platform's own logo treatment), unlike the site's own line-art
-   icon set (.brand-mark, .footer-mark, .appearance-toggle) — a deliberate
-   split, not an inconsistency. */
-.profile-row {
+/* Home profile row: the avatar on the left, the site's line about itself
+   and the social links beside it, the whole row on a bed of raked sand.
+   Icons here are solid third-party brand marks (each platform's own logo
+   treatment), unlike the site's own line-art icon set (.brand-mark,
+   .footer-mark, .appearance-toggle) — a deliberate split, not an
+   inconsistency. */
+.profile {
   position: relative;
-  margin: 0 0 1.5rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 1.5rem;
+  align-items: center;
+  /* The band is 128px tall and starts at the row's top edge; the row is at
+     least that tall and centres its contents on it, so the avatar sits
+     level with the garden whatever the sentence's line count. */
+  --band-h: 128px;
+  min-height: var(--band-h);
+  margin: 0 0 3rem;
 }
-.profile-row .profile { margin-bottom: 0; }
-/* Fills the empty space to the right of the avatar/icons with a generated
-   contour pattern (see `topomap.rs`). `left` mirrors `.social-links`' own
-   offset math plus its shrink-to-fit width, so the decoration starts flush
-   with the icon column rather than overlapping it. Hidden below a width
-   where that remaining space would be too cramped to read as a pattern. */
+/* Lays a generated raked-sand garden (see `sandgarden.rs`) across the
+   whole content column behind the row. The drawing anchors to the right
+   edge and the mask fades it in from the left, so the stones and their
+   rings sit fully visible in the corner and the grooves thin out under the
+   sentence rather than competing with it. Hidden below a width where the
+   avatar and sentence would leave too little of the bed showing to read as
+   a pattern. */
 .profile-decor {
   position: absolute;
-  left: calc(3.35rem + 150px);
+  left: 0;
   right: 0;
   top: 0;
-  height: 128px;
+  height: var(--band-h);
+  z-index: 0;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, transparent 30%, #000 72%);
+  mask-image: linear-gradient(to right, transparent 30%, #000 72%);
 }
 .profile-decor svg {
   width: 100%;
@@ -264,13 +419,12 @@ footer {
      --bg either way) — --tx-3 is tuned for dark-mode-only faint text and
      nearly vanishes against the light theme's pale cream background. */
   color: var(--stone);
-  /* Each contour path carries `--i` (its quantile level, 0-4, see
-     topomap.rs). Light needs a stronger base/step than dark to clear the
+  /* Each path carries `--i` (its level, 0-4, see sandgarden.rs: the bed
+     of grooves at 0, the rings around a stone climbing inward, the stone
+     itself at 4). Light needs a stronger base/step than dark to clear the
      same felt contrast: the same alpha reads much fainter against the
      light theme's pale --bg than against the near-black dark one, which is
-     what made the pattern nearly invisible in light mode. The resulting
-     ramp (faint inner rings, crisper outer one) also happens to mimic a
-     real topo map's bolded index contours. */
+     what made the pattern nearly invisible in light mode. */
   --topo-op-base: 0.32;
   --topo-op-step: 0.09;
 }
@@ -281,23 +435,37 @@ footer {
 .profile-decor svg path {
   opacity: calc(var(--topo-op-base) + var(--topo-op-step) * var(--i));
 }
-@media (max-width: 640px) {
-  .profile-decor { display: none; }
-}
-.profile {
+.avatar {
   position: relative;
-  display: inline-block;
-  margin: 0 0 1.5rem;
-  padding-left: 1.85rem;
+  z-index: 1;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center top;
+  border: none;
+  display: block;
+}
+.profile-text {
+  position: relative;
+  z-index: 1;
+}
+.profile-lede {
+  margin: 0;
+  color: var(--tx-2);
+  /* Short enough that the sentence ends before the garden's stone field
+     begins (see STONE_X_MIN in sandgarden.rs). */
+  max-width: 32ch;
+  text-wrap: pretty;
 }
 .social-links {
-  position: absolute;
-  left: calc(1.85rem + 128px + 14px - 0.5rem);
-  top: 0;
-  bottom: 0;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+  /* Pulls the first glyph back onto the sentence's left edge, undoing the
+     link's own hit-area padding. */
+  margin-left: -0.5rem;
 }
 .social-links a {
   color: var(--tx-3);
@@ -308,7 +476,7 @@ footer {
   line-height: 1;
   /* Enlarges the click/tap target well past the 16px glyph without
      changing its rendered position or the visual gap between icons. */
-  padding: 0.4rem 0.5rem;
+  padding: 0.5rem;
 }
 .social-links a:hover { color: var(--tx); }
 .social-links a:focus { outline: none; }
@@ -322,23 +490,53 @@ footer {
    open silhouettes; sized down slightly so it reads at the same optical
    weight as the rest of the stack instead of dominating it. */
 .social-links svg.icon-dense { width: 14px; height: 14px; }
+/* No avatar: no band to centre on, so the row is as tall as its text. */
 .profile.no-avatar {
-  display: block;
-  padding-left: 0;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
 }
-.profile.no-avatar .social-links {
-  position: static;
-  flex-direction: row;
+@media (max-width: 640px) {
+  .profile-decor { display: none; }
+  .profile {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 1rem;
+    min-height: 0;
+    margin-bottom: 2.5rem;
+  }
+  .profile-lede { max-width: none; }
 }
-.avatar {
-  width: 128px;
-  height: 128px;
-  border-radius: 50%;
-  object-fit: cover;
-  object-position: center top;
-  border: none;
-  display: block;
+
+/* The newest post, previewed. Everything here is sized against the body
+   rather than the heading scale: the title is one step up and regular in
+   colour, the meta and excerpt one step down and quiet, so the block reads
+   as a listing entry given room rather than as a second page heading. */
+.latest { margin: 0 0 0.5rem; }
+.latest .section-label { margin: 0 0 1rem; }
+.latest-title {
+  font-size: 1.35em;
+  margin: 0 0 0.35rem;
+  letter-spacing: -0.015em;
 }
+.latest-title a { color: var(--tx); text-decoration: none; }
+.latest-title a:hover { color: var(--accent); text-decoration: underline; }
+.latest-meta {
+  margin: 0 0 0.75rem;
+  color: var(--tx-2);
+  font-size: var(--font-small);
+  font-variant-numeric: tabular-nums;
+}
+.latest-excerpt {
+  margin: 0;
+  color: var(--tx-2);
+  max-width: 60ch;
+  text-wrap: pretty;
+}
+.keep-reading {
+  color: var(--tx-2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.keep-reading:hover { color: var(--accent); text-decoration: underline; }
 
 /* About page floating avatar */
 .about-avatar {
@@ -352,9 +550,17 @@ footer {
   shape-outside: circle();
 }
 
-/* Index intro + post listing */
-.intro { color: var(--tx-2); margin: 0 0 2rem; }
-.section-label { margin-top: 1rem; margin-bottom: 1rem; color: var(--tx-2); font-weight: 400; }
+/* Index post listing */
+/* A label, not a faded heading: the list below is the page, this only names
+   it. Small, tracked and quiet, the way the draft badge is drawn. */
+.section-label {
+  margin: 1rem 0;
+  color: var(--tx-2);
+  font-size: var(--font-small);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
 .post-list {
   list-style: none;
   padding: 0;
@@ -503,7 +709,7 @@ a.img-original {
   border-top: 1px solid var(--ui);
   font-size: 0.9em;
 }
-.references h2 { font-size: 1.15rem; color: var(--tx-2); }
+.references h2 { font-size: 1.2em; color: var(--tx-2); }
 .reference-list {
   margin: 0.75rem 0 0 0;
   padding-left: 1.5rem;
@@ -569,24 +775,37 @@ sup a.cite:hover { text-decoration: underline; }
 }
 .sidenote {
   display: none;
-  font-size: 0.85em;
-  line-height: 1.5;
+  /* Smaller and tighter than the prose so a note reads as an aside, not a
+   * second column; a shorter note also pushes the one below it less. */
+  font-size: var(--font-smaller);
+  line-height: 1.4;
   color: var(--tx-2);
+  /* The number hangs in its own gutter so every wrapped line starts under
+   * the first word rather than under the digit. */
+  padding-left: 1.3em;
+  text-indent: -1.3em;
+  /* A 12rem measure leaves a ragged right edge without hyphenation; posts
+   * carry a `lang` attribute, so the browser has a dictionary to use. */
+  hyphens: auto;
   /* One bare URL in a note must not force the page to scroll sideways. */
   overflow-wrap: break-word;
 }
 .sn-toggle:checked ~ .sidenote {
   display: block;
   margin: 0.6rem 0 0.9rem;
-  padding-left: 0.9rem;
+  /* The rule's own gap plus the hanging gutter. */
+  padding-left: calc(0.9rem + 1.3em);
   border-left: 2px solid var(--ui);
 }
 .sn-num {
-  margin-right: 0.4em;
-  color: var(--tx-3);
+  display: inline-block;
+  width: 1.3em;
+  text-indent: 0;
+  /* Same colour as the mark in the prose, so the two pair at a glance. */
+  color: var(--tx-2);
   font-variant-numeric: tabular-nums;
 }
-.sn-p { display: block; margin-top: 0.5em; }
+.sn-p { display: block; margin-top: 0.5em; text-indent: 0; }
 .sidenote .math.display { margin: 0.5em 0; }
 .sidenote math { max-width: 100%; }
 /* Referenced but never defined (see Footnotes::markup). */
@@ -606,7 +825,7 @@ sup a.cite:hover { text-decoration: underline; }
     /* Outer width goes negative, so the note claims no space in the text
      * column and the prose keeps its full measure. */
     margin: 0.35rem -14rem 1rem 0;
-    padding-left: 0;
+    padding-left: 1.3em;
     border-left: 0;
   }
   /* The note is always visible up here; the mark has nothing left to toggle. */

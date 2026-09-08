@@ -5,12 +5,18 @@
 :root {
   --mg-shadow: 1;   /* raking shadow, day only */
   --mg-aura:   0;   /* lantern pool, night only */
-  --mg-prop:   1;
+  /* By day the stone is the one thing on screen before he arrives, on every
+   * page, 16px from the prose: at full strength its dark greys outweigh
+   * anything on a pale page but the type. A little under, and a lantern
+   * passing in daylight changes nothing, which is what daylight means. */
+  --mg-prop:     .75;
+  --mg-prop-lit: .75;
 }
 [data-theme="dark"] {
   --mg-shadow: 0;
   --mg-aura:   1;
-  --mg-prop:  .12;  /* near-invisible until his lantern reaches it */
+  --mg-prop:    .12;  /* near-invisible until his lantern reaches it */
+  --mg-prop-lit: 1;
 }
 
 #mg {
@@ -31,12 +37,12 @@
   position: absolute;
   bottom: 0;
   will-change: transform;
-  /* Durations are set per beat by the runtime; only the easing lives here.
-   * A single ease-out curve across a whole beat's translateY gives every
-   * walking beat its own accel/decel for free — no keyframe splitting
-   * needed, since the curve already slows him into an arrival and eases
-   * him away from a stop. Only these two properties ever animate, so a
-   * crossing never touches layout or paint. */
+  /* Durations are set per beat by the runtime; the easing here is for the
+   * beats where he stands, snaps or dissolves. Travelling beats get a
+   * near-linear curve from the runtime instead, because the walk cycle
+   * runs at one fixed rate and an ease that spends the ends of a 7s beat
+   * nearly still makes the feet slide. Only these two properties ever
+   * animate, so a crossing never touches layout or paint. */
   transition: transform 0s cubic-bezier(.33, 0, .15, 1), opacity .9s ease-in-out;
 }
 /* An explicit box, because the shadow is sized off the figure and the frames
@@ -59,18 +65,31 @@
   transition: opacity 1.6s ease-out;
   shape-rendering: crispEdges;
 }
-#mg.mg-lit .mg-prop { opacity: 1; }
+#mg.mg-lit .mg-prop { opacity: var(--mg-prop-lit); }
 
-/* Day. */
-#mg .mg-shadow {
+/* Day. The same raking light falls on both of them: a figure that casts a
+ * shadow beside a stone that doesn't leaves the stone floating, and the
+ * stone is the one that is always there. Both are sized off the thing they
+ * belong to, so a bigger cast member or prop throws a bigger shadow with
+ * nothing re-tuned. */
+#mg .mg-shadow, #mg .mg-prop-shadow {
   position: absolute;
+  opacity: var(--mg-shadow);
+  transform: translateX(-6%) skewX(-38deg);
+  background: radial-gradient(ellipse at 32% 50%, rgba(60,52,40,.33), rgba(60,52,40,0) 68%);
+}
+#mg .mg-shadow {
   left: 10%;
   bottom: 2%;
   width: 220%;
   height: 36%;
-  opacity: var(--mg-shadow);
-  transform: translateX(-6%) skewX(-38deg);
-  background: radial-gradient(ellipse at 32% 50%, rgba(60,52,40,.33), rgba(60,52,40,0) 68%);
+}
+#mg .mg-prop-shadow {
+  z-index: 1;
+  left: calc(var(--mg-px) + var(--mg-pw) * .1);
+  bottom: calc(var(--mg-py) + var(--mg-ph) * .02);
+  width: calc(var(--mg-pw) * 2.2);
+  height: calc(var(--mg-ph) * .5);
 }
 /* Night: one pool, on the ground beneath the lantern. */
 #mg .mg-aura i {

@@ -83,6 +83,9 @@ cargo install --path /path/to/rustoki --locked
 - Optional `content/posts/<post-stem>.refs.yaml` bibliography sidecars for
   `\cite{key}`/`\citep{key}`.
 - Optional `[margin]` block for the margin figure (see below).
+- Optional `garden = false` to drop the raked-sand garden drawn beside the
+  avatar on the home page. It is on by default (and only ever shows when an
+  `avatar` is set).
 
 Footnotes need no configuration. Write one as LaTeX `\footnote{...}` — a
 manuscript converted to Markdown needs no editing on that score — or as an

@@ -29,17 +29,18 @@
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
 </head>
 <body>
-<header>
+<header id="top">
   <a class="site-title" href="/"><svg class="brand-mark" viewBox="0 0 100 100" aria-hidden="true"><path d="M40,42 L78,34 C88,33 93,42 92,52 C91,64 86,76 76,84 C68,90 55,91 46,88 C36,85 32,76 33,66 C34,56 36,48 40,42 Z"/><path d="M14,80 L24,77 C28,78 30,82 28,86 C26,90 20,91 15,90 C10,89 9,84 14,80 Z"/></svg>{{ site.title }}{% if section %}<span class="site-section"> / {{ section }}</span>{% endif %}</a>
   <nav>
     {% for item in site.menu %}<a href="{{ item.url }}">{{ item.name }}</a>{% endfor %}
     <button id="theme-toggle" class="appearance-toggle" type="button" role="switch" aria-checked="false" aria-label="Toggle theme">
+      {#- One colour, two shapes. The lobe's own dot is an even-odd hole
+          rather than a `--bg`-filled circle, so nothing here has to know
+          what the page background is. -#}
       <svg viewBox="0 0 100 100" aria-hidden="true">
-        <circle class="toggle-ring" cx="50" cy="50" r="47.25"/>
-        <circle class="toggle-paper" cx="50" cy="50" r="47"/>
-        <path class="toggle-ink" d="M50,3 A47,47 0 0,1 50,97 A23.5,23.5 0 0,1 50,50 A23.5,23.5 0 0,0 50,3 Z"/>
-        <circle class="toggle-ink" cx="50" cy="26.5" r="6.5"/>
-        <circle class="toggle-paper" cx="50" cy="73.5" r="6.5"/>
+        <circle class="toggle-ring" cx="50" cy="50" r="44"/>
+        <path class="toggle-ink" fill-rule="evenodd" d="M50,6 A44,44 0 0,1 50,94 A22,22 0 0,1 50,50 A22,22 0 0,0 50,6 Z M44,72 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0 Z"/>
+        <circle class="toggle-ink" cx="50" cy="28" r="6"/>
       </svg>
     </button>
   </nav>
@@ -64,10 +65,18 @@
     document.documentElement.style.setProperty('--turns',turns+1);
   }
   b.addEventListener('click',toggleTheme);
+  // Both single-key shortcuts live here rather than one per template, so the
+  // "not while the reader is typing" guard is written once. Shifted letters,
+  // so neither collides with a browser's own single-key bindings.
   document.addEventListener('keydown',function(e){
-    if(e.key==='D'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){
-      toggleTheme();
-    }
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    var t=document.activeElement.tagName;
+    if(t==='INPUT'||t==='TEXTAREA')return;
+    if(e.key==='D'){toggleTheme();return;}
+    // Only post pages carry a back-to-top control; everywhere else this is a
+    // no-op. Going through the anchor's own click keeps one code path, so the
+    // key lands exactly where the button does.
+    if(e.key==='T'){var u=document.querySelector('.to-top');if(u)u.click();}
   });
 })();
 </script>

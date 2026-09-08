@@ -2,10 +2,43 @@
 {% block content %}
 <article>
   <h1>{{ post.title }}{% if post.draft %} <span class="draft-badge">Draft</span>{% endif %}</h1>
-  <p class="meta"><time datetime="{{ post.date }}">{{ post.date_display }}</time> &middot; {{ post.reading_time }} min read</p>
+  <p class="post-meta"><time datetime="{{ post.date }}">{{ post.date_display }}</time> &middot; {{ post.reading_time }} min read</p>
   {% if post.toc_html %}{{ post.toc_html | safe }}{% endif %}
   {{ post.html | safe }}
 </article>
+{#- Where a post ends. The listing on the home page is ordered by date, so
+    "older" and "newer" are simply the rows on either side of this one there.
+    Emitted only when there is somewhere to go: a lone post ends at its last
+    line, not under an empty rule. rel=prev/next follow the chronological
+    sequence, which is what the listing already is. -#}
+{% if post.older or post.newer %}
+<nav class="post-nav" aria-label="Neighbouring posts">
+  {% if post.older %}<a class="post-nav-older" rel="prev" href="/posts/{{ post.older.slug }}/"><span class="post-nav-label">Older</span><span class="post-nav-title">{{ post.older.title }}</span></a>{% endif %}
+  {% if post.newer %}<a class="post-nav-newer" rel="next" href="/posts/{{ post.newer.slug }}/"><span class="post-nav-label">Newer</span><span class="post-nav-title">{{ post.newer.title }}</span></a>{% endif %}
+</nav>
+{% endif %}
+{#- The href does the scrolling, so this needs no script and behaves like
+    every other in-page jump on the site: a plain anchor, which also moves
+    keyboard focus to the header rather than leaving it stranded at the foot
+    of the article. The script below only decides when to show the control,
+    and only ever from the header's own visibility: an IntersectionObserver
+    rather than a scroll listener, for the same reason the margin figure
+    checks its width once per crossing instead of holding a resize handler. -#}
+<a class="to-top" href="#top" aria-label="Back to top" title="Back to top (Shift+T)">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 14.5 L12 7.5 L19 14.5"/></svg>
+</a>
+<script data-cfasync="false">
+(function(){
+  var b=document.querySelector('.to-top'),t=document.getElementById('top');
+  if(!b||!t||!('IntersectionObserver' in window))return;
+  // Synchronous, so the control is already hidden on the first paint at the
+  // top of the page rather than flashing in and back out.
+  b.classList.add('js');
+  new IntersectionObserver(function(e){
+    b.classList.toggle('shown',!e[0].isIntersecting);
+  }).observe(t);
+})();
+</script>
 {% if site.giscus %}
 <section class="comments" aria-label="Comments">
   <h2>Comments</h2>

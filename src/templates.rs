@@ -15,6 +15,16 @@ const PAGE_HTML: &str = include_str!("../templates/page.html");
 const INDEX_HTML: &str = include_str!("../templates/index.html");
 const NOT_FOUND_HTML: &str = include_str!("../templates/404.html");
 
+/// The post on either side of this one in the listing, enough to name it and
+/// link to it. Every post links to its neighbours at the foot of the page, so
+/// a reader who reaches the end is handed the next thing to read rather than
+/// the copyright line.
+#[derive(Debug, Clone, Serialize)]
+pub struct PostNeighbour {
+    pub title: String,
+    pub slug: String,
+}
+
 /// Per-post view-model passed into `post.html`.
 #[derive(Debug, Clone, Serialize)]
 pub struct PostView {
@@ -31,6 +41,11 @@ pub struct PostView {
     /// True when `frontmatter.draft` is set — only reachable via `ssg build
     /// --drafts`. Drives the "Draft" badge shown on the page.
     pub draft: bool,
+    /// The next post down the listing (earlier date) and the next one up
+    /// (later date). `None` at either end of the list; both `None` on a
+    /// one-post site, and the template then emits no navigation at all.
+    pub older: Option<PostNeighbour>,
+    pub newer: Option<PostNeighbour>,
 }
 
 /// Per-page view-model passed into `page.html`.
@@ -52,6 +67,12 @@ pub struct PostListEntry {
     pub date: String,
     pub date_display: String,
     pub draft: bool,
+    pub reading_time: u32,
+    /// The post's own frontmatter description, if it has one. Unlike the
+    /// `<meta>` description this never falls back to the site's: the home
+    /// page's "Latest" block quotes it as an excerpt, and the site's line
+    /// about itself is not an excerpt of anything.
+    pub description: Option<String>,
 }
 
 /// Render-time inputs that aren't owned by the markdown content itself.
@@ -86,9 +107,9 @@ pub struct PageContext<'a> {
 pub struct IndexContext<'a> {
     pub env: RenderEnv<'a>,
     pub posts: &'a [PostListEntry],
-    /// Pre-rendered `<svg>` contour decoration, or empty string when the
-    /// field turned out degenerate. See `topomap::build`.
-    pub topomap: &'a str,
+    /// Pre-rendered `<svg>` raked-sand decoration for the profile row, or
+    /// empty string to omit it. See `sandgarden::build`.
+    pub garden: &'a str,
 }
 
 /// Full context handed to `render_404`. Minimal — the 404 page only needs
@@ -189,7 +210,7 @@ impl Templates {
             description => ctx.env.site.description.clone(),
             lang => "en",
             posts => ctx.posts,
-            topomap => ctx.topomap,
+            garden => ctx.garden,
         })
         .context("rendering index.html")
     }
@@ -242,6 +263,7 @@ mod tests {
             ],
             giscus: None,
             margin: None,
+            garden: true,
         }
     }
 
@@ -257,6 +279,8 @@ mod tests {
             lang: "en".to_string(),
             toc_html: String::new(),
             draft: false,
+            older: None,
+            newer: None,
         }
     }
 
@@ -313,6 +337,80 @@ mod tests {
     }
 
     #[test]
+    fn post_nav_links_both_neighbours() {
+        let templates = Templates::new().unwrap();
+        let cfg = fixture_config();
+        let mut post = fixture_post();
+        post.older = Some(PostNeighbour {
+            title: "First Steps".to_string(),
+            slug: "first-steps".to_string(),
+        });
+        post.newer = Some(PostNeighbour {
+            title: "What Came After".to_string(),
+            slug: "after".to_string(),
+        });
+        let html = templates
+            .render_post(&PostContext {
+                env: RenderEnv {
+                    site: &cfg,
+                    inline_css: "",
+                    year: 2026,
+                    margin: None,
+                },
+                post,
+            })
+            .unwrap();
+        assert!(
+            html.contains(r#"rel="prev" href="/posts/first-steps/""#),
+            "older post should be linked as rel=prev: {html}"
+        );
+        assert!(
+            html.contains(r#"rel="next" href="/posts/after/""#),
+            "newer post should be linked as rel=next: {html}"
+        );
+        assert!(html.contains("First Steps"), "older title missing: {html}");
+        assert!(html.contains("What Came After"), "newer title missing: {html}");
+        // The article's own clear-both pseudo-element must precede the nav,
+        // so a long last sidenote cannot run over it (see main.css).
+        let article_end = html.find("</article>").unwrap();
+        let nav = html.find(r#"<nav class="post-nav""#).unwrap();
+        assert!(article_end < nav, "post nav should follow the article: {html}");
+    }
+
+    #[test]
+    fn post_nav_is_omitted_on_a_lone_post() {
+        let html = render_with_body("<p>Only post.</p>");
+        assert!(
+            !html.contains("post-nav"),
+            "a post with no neighbours should carry no navigation: {html}"
+        );
+    }
+
+    #[test]
+    fn post_nav_keeps_one_side_when_the_other_is_missing() {
+        let templates = Templates::new().unwrap();
+        let cfg = fixture_config();
+        let mut post = fixture_post();
+        post.older = Some(PostNeighbour {
+            title: "First Steps".to_string(),
+            slug: "first-steps".to_string(),
+        });
+        let html = templates
+            .render_post(&PostContext {
+                env: RenderEnv {
+                    site: &cfg,
+                    inline_css: "",
+                    year: 2026,
+                    margin: None,
+                },
+                post,
+            })
+            .unwrap();
+        assert!(html.contains(r#"rel="prev""#), "older link missing: {html}");
+        assert!(!html.contains(r#"rel="next""#), "spurious newer link: {html}");
+    }
+
+    #[test]
     fn twimg_preconnect_only_on_pages_that_embed_a_tweet() {
         let with = render_with_body(r#"<p>See:</p><div class="tweet-card">…</div>"#);
         assert!(
@@ -340,7 +438,7 @@ mod tests {
                     margin: None,
                 },
                 posts: &[],
-                topomap: "",
+                garden: "",
             })
             .unwrap();
         assert!(
@@ -502,6 +600,8 @@ mod tests {
                 date: "2024-10-02".to_string(),
                 date_display: "Oct 2, 2024".to_string(),
                 draft: false,
+                reading_time: 4,
+                description: Some("Notes on reward.".to_string()),
             },
             PostListEntry {
                 title: "Older Thoughts".to_string(),
@@ -509,12 +609,14 @@ mod tests {
                 date: "2022-01-01".to_string(),
                 date_display: "Jan 1, 2022".to_string(),
                 draft: false,
+                reading_time: 2,
+                description: None,
             },
         ];
         let ctx = IndexContext {
             env,
             posts: &posts,
-            topomap: "",
+            garden: "",
         };
         let html = templates.render_index(&ctx).unwrap();
         assert!(html.contains("Test Site"), "missing site title in: {html}");
@@ -536,6 +638,42 @@ mod tests {
             html.contains("post-list"),
             "missing post-list class in: {html}"
         );
+        // The newest post is also previewed in the "Latest" block, with its
+        // reading time and description; older ones are only listed.
+        assert!(html.contains("class=\"latest\""), "missing latest block in: {html}");
+        assert!(html.contains("4 min read"), "missing reading time in: {html}");
+        assert!(html.contains("Notes on reward."), "missing excerpt in: {html}");
+        assert_eq!(html.matches("Keep reading").count(), 1, "one excerpt only: {html}");
+    }
+
+    #[test]
+    fn latest_block_omits_excerpt_when_post_has_no_description() {
+        let templates = Templates::new().unwrap();
+        let cfg = fixture_config();
+        let env = RenderEnv {
+            site: &cfg,
+            inline_css: "",
+            year: 2026,
+            margin: None,
+        };
+        let posts = vec![PostListEntry {
+            title: "Bare".to_string(),
+            slug: "bare".to_string(),
+            date: "2024-10-02".to_string(),
+            date_display: "Oct 2, 2024".to_string(),
+            draft: false,
+            reading_time: 1,
+            description: None,
+        }];
+        let ctx = IndexContext {
+            env,
+            posts: &posts,
+            garden: "",
+        };
+        let html = templates.render_index(&ctx).unwrap();
+        assert!(html.contains("class=\"latest\""), "missing latest block in: {html}");
+        assert!(!html.contains("Keep reading"), "excerpt without description in: {html}");
+        assert!(html.contains("1 min read"), "missing reading time in: {html}");
     }
 
     #[test]
@@ -551,7 +689,7 @@ mod tests {
         let ctx = IndexContext {
             env,
             posts: &[],
-            topomap: "",
+            garden: "",
         };
         let html = templates.render_index(&ctx).unwrap();
         // Header link still present even when there are no posts.
