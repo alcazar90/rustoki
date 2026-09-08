@@ -18,15 +18,21 @@ use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::hash::{Hash, Hasher};
 
-/// Field resolution. The aspect ratio (150:40 = 3.75) matches `.profile-decor`
-/// in `main.css` so the `<svg>` can stretch to fill it via
-/// `preserveAspectRatio="none"` without visibly distorting the pattern.
-const SAMPLE_W: usize = 150;
+/// Field resolution. `preserveAspectRatio="none"` means the `<svg>` stretches
+/// to whatever box `.profile-decor` gives it, so the sampling grid's aspect
+/// has to match that box or every contour comes out horizontally smeared.
+/// The box is the full content column (700px less its 2rem of padding either
+/// side) by 128px tall, so 194:39 = 4.97. `aspect_matches_the_css_box` below
+/// keeps the two from drifting apart.
+const SAMPLE_W: usize = 195;
 const SAMPLE_H: usize = 40;
 
 /// Coarse control-point lattice the ambient ground texture is interpolated
 /// from — this is what keeps landmark bumps from reading as perfect circles.
-const LATTICE_W: usize = 9;
+/// `LATTICE_W` tracks `SAMPLE_W` so a wider field gets more ground features
+/// rather than the same ones stretched: 10 intervals over 194 samples holds
+/// the cell at ~19 units, the size it had when the field was narrower.
+const LATTICE_W: usize = 11;
 const LATTICE_H: usize = 4;
 /// How much the ambient ground contributes next to a landmark's own bump
 /// (which contributes up to 1.0). Kept low: it's texture, not a feature.
@@ -386,6 +392,22 @@ pub fn build(ambient_seed: &str, post_slugs: &[&str]) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The `<svg>` carries no width or height and stretches to fill
+    /// `.profile-decor` via `preserveAspectRatio="none"`, so the sampling
+    /// grid's aspect has to track that box. Widening the decoration without
+    /// widening the field here is what smears the contours sideways.
+    #[test]
+    fn aspect_matches_the_css_box() {
+        // `.profile-decor` spans the content column (body max-width 700px
+        // less 2rem of padding either side) and is 128px tall.
+        let css = (700.0 - 2.0 * 32.0) / 128.0;
+        let field = (SAMPLE_W - 1) as f32 / (SAMPLE_H - 1) as f32;
+        assert!(
+            (field - css).abs() < 0.1,
+            "field aspect {field:.2} has drifted from .profile-decor's {css:.2}"
+        );
+    }
 
     #[test]
     fn same_posts_are_deterministic() {

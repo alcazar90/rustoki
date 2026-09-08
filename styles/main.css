@@ -249,19 +249,38 @@ footer {
 .profile-row {
   position: relative;
   margin: 0 0 1.5rem;
+  /* Where the icon column starts and ends, measured from the content
+     column's left edge: the avatar's own left padding, the avatar, the gap,
+     less the link's horizontal padding so the offset lands on the glyphs
+     rather than on their enlarged hit areas. `.social-links` positions
+     itself with this and `.profile-decor` masks itself with it, so the two
+     cannot drift apart the way two hand-copied sums would. */
+  --icon-col: calc(1.85rem + 128px + 14px - 0.5rem);
+  --icon-col-w: 32px;
 }
 .profile-row .profile { margin-bottom: 0; }
-/* Fills the empty space to the right of the avatar/icons with a generated
-   contour pattern (see `topomap.rs`). `left` mirrors `.social-links`' own
-   offset math plus its shrink-to-fit width, so the decoration starts flush
-   with the icon column rather than overlapping it. Hidden below a width
-   where that remaining space would be too cramped to read as a pattern. */
+/* Lays a generated contour pattern (see `topomap.rs`) across the whole
+   content column, so the avatar sits on a band of terrain rather than next
+   to a patch of it. The avatar is opaque and hides the contours behind it by
+   itself; the social glyphs are `--tx-3` hairlines of much the same weight
+   as a contour line, so the mask opens a soft hole over just that column.
+   Hidden below a width where the avatar and icons would leave too little of
+   the band showing to read as a pattern. */
 .profile-decor {
   position: absolute;
-  left: calc(3.35rem + 150px);
+  left: 0;
   right: 0;
   top: 0;
   height: 128px;
+  z-index: 0;
+  -webkit-mask-image: var(--icon-col-mask);
+  mask-image: var(--icon-col-mask);
+  --icon-col-mask: linear-gradient(
+    to right,
+    #000 0 calc(var(--icon-col) - 0.75rem),
+    rgba(0, 0, 0, 0.12) var(--icon-col) calc(var(--icon-col) + var(--icon-col-w)),
+    #000 calc(var(--icon-col) + var(--icon-col-w) + 1.25rem) 100%
+  );
 }
 .profile-decor svg {
   width: 100%;
@@ -293,13 +312,17 @@ footer {
 }
 .profile {
   position: relative;
+  /* Both this and `.profile-decor` are positioned, and this one comes first
+     in the markup, so without an explicit order the decoration would paint
+     on top of the avatar rather than behind it. */
+  z-index: 1;
   display: inline-block;
   margin: 0 0 1.5rem;
   padding-left: 1.85rem;
 }
 .social-links {
   position: absolute;
-  left: calc(1.85rem + 128px + 14px - 0.5rem);
+  left: var(--icon-col);
   top: 0;
   bottom: 0;
   display: flex;
