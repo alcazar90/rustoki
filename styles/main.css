@@ -33,6 +33,14 @@
      font read as slightly darker prose rather than a heading; 300 for the
      site title was thin on macOS and silently 400 on the fallbacks. */
   --heading-weight: 600;
+  /* Head margin: the space between the browser's chrome and the site title.
+     Fixed at 2rem the title sat close enough to the toolbar to read as one
+     more row of it. The vw term makes the margin behave like the column's
+     own side gutters: it grows with the screen (~45px at 1400px, ~53px at
+     1920px) and gives nothing away on a phone, where the 2rem floor holds. Both
+     the body's padding and the header's scroll target read this, so the
+     back-to-top jump always lands exactly where the page starts. */
+  --page-top: max(2rem, calc(1.5rem + 1.5vw));
 
   color-scheme: light;
 }
@@ -74,7 +82,7 @@ body {
   background: var(--bg);
   max-width: 700px;
   margin: 0 auto;
-  padding: 2rem clamp(20px, 4vw, 2rem);
+  padding: var(--page-top) clamp(20px, 4vw, 2rem) 2rem;
 }
 
 /* Headings */
@@ -129,13 +137,17 @@ header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 3rem;
+  /* A little more than the 3rem it had: the header is the quietest thing on
+     the page, regular weight and no rule, and space is what gives it
+     standing without making it heavier. */
+  margin-bottom: 3.5rem;
   gap: 1rem;
   flex-wrap: wrap;
   /* `.to-top` targets this as `#top`. Without a margin the jump parks the
      header flush against the viewport edge, scrolling the body's own top
-     padding out of view; 2rem lands it exactly where the page starts. */
-  scroll-margin-top: 2rem;
+     padding out of view; the same value as that padding lands it exactly
+     where the page starts. */
+  scroll-margin-top: var(--page-top);
 }
 header .site-title {
   display: inline-flex;
