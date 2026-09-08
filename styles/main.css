@@ -657,24 +657,37 @@ sup a.cite:hover { text-decoration: underline; }
 }
 .sidenote {
   display: none;
-  font-size: 0.85em;
-  line-height: 1.5;
+  /* Smaller and tighter than the prose so a note reads as an aside, not a
+   * second column; a shorter note also pushes the one below it less. */
+  font-size: var(--font-smaller);
+  line-height: 1.4;
   color: var(--tx-2);
+  /* The number hangs in its own gutter so every wrapped line starts under
+   * the first word rather than under the digit. */
+  padding-left: 1.3em;
+  text-indent: -1.3em;
+  /* A 12rem measure leaves a ragged right edge without hyphenation; posts
+   * carry a `lang` attribute, so the browser has a dictionary to use. */
+  hyphens: auto;
   /* One bare URL in a note must not force the page to scroll sideways. */
   overflow-wrap: break-word;
 }
 .sn-toggle:checked ~ .sidenote {
   display: block;
   margin: 0.6rem 0 0.9rem;
-  padding-left: 0.9rem;
+  /* The rule's own gap plus the hanging gutter. */
+  padding-left: calc(0.9rem + 1.3em);
   border-left: 2px solid var(--ui);
 }
 .sn-num {
-  margin-right: 0.4em;
-  color: var(--tx-3);
+  display: inline-block;
+  width: 1.3em;
+  text-indent: 0;
+  /* Same colour as the mark in the prose, so the two pair at a glance. */
+  color: var(--tx-2);
   font-variant-numeric: tabular-nums;
 }
-.sn-p { display: block; margin-top: 0.5em; }
+.sn-p { display: block; margin-top: 0.5em; text-indent: 0; }
 .sidenote .math.display { margin: 0.5em 0; }
 .sidenote math { max-width: 100%; }
 /* Referenced but never defined (see Footnotes::markup). */
@@ -694,7 +707,7 @@ sup a.cite:hover { text-decoration: underline; }
     /* Outer width goes negative, so the note claims no space in the text
      * column and the prose keeps its full measure. */
     margin: 0.35rem -14rem 1rem 0;
-    padding-left: 0;
+    padding-left: 1.3em;
     border-left: 0;
   }
   /* The note is always visible up here; the mark has nothing left to toggle. */
