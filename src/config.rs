@@ -147,8 +147,8 @@ impl Config {
         let path = path.as_ref();
         let raw = fs::read_to_string(path)
             .with_context(|| format!("reading config from {}", path.display()))?;
-        let config: Self = toml::from_str(&raw)
-            .with_context(|| format!("parsing TOML in {}", path.display()))?;
+        let config: Self =
+            toml::from_str(&raw).with_context(|| format!("parsing TOML in {}", path.display()))?;
         Ok(config)
     }
 }
@@ -215,11 +215,11 @@ url = "U"
 author = "A"
 description = "D"
 "#;
-        let config = Config::load(&write_temp(base)).unwrap();
+        let config = Config::load(write_temp(base)).unwrap();
         assert!(config.garden, "garden should default to on");
 
         let off = format!("{base}\ngarden = false\n");
-        let config = Config::load(&write_temp(&off)).unwrap();
+        let config = Config::load(write_temp(&off)).unwrap();
         assert!(!config.garden);
     }
 
@@ -296,7 +296,10 @@ description = "D"
 [margin]
 "#,
         );
-        let m = Config::load(&path).unwrap().margin.expect("margin should parse");
+        let m = Config::load(&path)
+            .unwrap()
+            .margin
+            .expect("margin should parse");
         assert_eq!(m.character, "traveller");
         assert_eq!(m.first_delay, 40);
         assert_eq!(m.interval, [90, 180]);

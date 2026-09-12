@@ -12,7 +12,10 @@ pub fn run(out_root: &Path, port: u16) -> Result<()> {
     let addr = format!("127.0.0.1:{port}");
     let server = Server::http(&addr).map_err(|e| anyhow!("binding {addr}: {e}"))?;
 
-    eprintln!("serving {} at http://{addr}/  (Ctrl+C to stop)", out_root.display());
+    eprintln!(
+        "serving {} at http://{addr}/  (Ctrl+C to stop)",
+        out_root.display()
+    );
 
     for request in server.incoming_requests() {
         let path_only = request.url().split('?').next().unwrap_or("/").to_string();
@@ -26,7 +29,11 @@ pub fn run(out_root: &Path, port: u16) -> Result<()> {
                 }
                 Err(e) => {
                     eprintln!("warning: failed reading {}: {e}", file_path.display());
-                    (b"internal server error".to_vec(), "text/plain; charset=utf-8", 500)
+                    (
+                        b"internal server error".to_vec(),
+                        "text/plain; charset=utf-8",
+                        500,
+                    )
                 }
             },
             None => {
@@ -174,7 +181,10 @@ mod tests {
     fn direct_file_route_resolves_as_is() {
         let dir = TempDir::new("file");
         write(&dir.0, "feed.xml", "<feed/>");
-        assert_eq!(resolve(&dir.0, "/feed.xml").unwrap(), dir.0.join("feed.xml"));
+        assert_eq!(
+            resolve(&dir.0, "/feed.xml").unwrap(),
+            dir.0.join("feed.xml")
+        );
     }
 
     #[test]
@@ -200,8 +210,14 @@ mod tests {
 
     #[test]
     fn content_type_maps_known_extensions() {
-        assert_eq!(content_type_for(Path::new("x.html")), "text/html; charset=utf-8");
+        assert_eq!(
+            content_type_for(Path::new("x.html")),
+            "text/html; charset=utf-8"
+        );
         assert_eq!(content_type_for(Path::new("x.webp")), "image/webp");
-        assert_eq!(content_type_for(Path::new("x.unknownext")), "application/octet-stream");
+        assert_eq!(
+            content_type_for(Path::new("x.unknownext")),
+            "application/octet-stream"
+        );
     }
 }

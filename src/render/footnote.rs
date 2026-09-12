@@ -383,9 +383,18 @@ mod tests {
         let placeholder = fns.placeholder("a");
         fns.define("a", "<p>The note body.</p>");
         let html = splice(&format!("<p>Text{placeholder}.</p>"), &fns);
-        assert!(html.contains(r#"<input type="checkbox" id="sn-1" class="sn-toggle">"#), "got: {html}");
-        assert!(html.contains(r#"<label class="sn-mark" for="sn-1""#), "got: {html}");
-        assert!(html.contains(r#"<span class="sidenote" role="doc-footnote">"#), "got: {html}");
+        assert!(
+            html.contains(r#"<input type="checkbox" id="sn-1" class="sn-toggle">"#),
+            "got: {html}"
+        );
+        assert!(
+            html.contains(r#"<label class="sn-mark" for="sn-1""#),
+            "got: {html}"
+        );
+        assert!(
+            html.contains(r#"<span class="sidenote" role="doc-footnote">"#),
+            "got: {html}"
+        );
         assert!(html.contains("The note body."), "got: {html}");
         assert!(!html.contains("rustoki-sn"), "placeholder leaked: {html}");
     }
@@ -413,7 +422,11 @@ mod tests {
     fn phrasing_converts_blocks_to_spans() {
         let out = phrasing("<p>a</p>\n<p>b</p>\n");
         assert!(!out.contains("<p>"), "got: {out}");
-        assert_eq!(out.matches(r#"<span class="sn-p">"#).count(), 2, "got: {out}");
+        assert_eq!(
+            out.matches(r#"<span class="sn-p">"#).count(),
+            2,
+            "got: {out}"
+        );
     }
 
     #[test]

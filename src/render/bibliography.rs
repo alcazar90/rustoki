@@ -36,8 +36,7 @@ pub type BibMap = HashMap<String, BibEntry>;
 pub fn load_bib(path: &Path) -> Result<BibMap> {
     let raw = std::fs::read_to_string(path)
         .with_context(|| format!("reading bibliography {}", path.display()))?;
-    serde_yaml::from_str(&raw)
-        .with_context(|| format!("parsing bibliography {}", path.display()))
+    serde_yaml::from_str(&raw).with_context(|| format!("parsing bibliography {}", path.display()))
 }
 
 /// Strip the `## References` heading and everything that follows it from the

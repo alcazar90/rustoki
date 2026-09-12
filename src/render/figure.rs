@@ -21,8 +21,8 @@ use std::sync::OnceLock;
 /// numbering (figures and equations are separate LaTeX counters).
 pub fn collect_figure_labels(body: &str) -> HashMap<String, u32> {
     static FIGURE_RE: OnceLock<Regex> = OnceLock::new();
-    let re = FIGURE_RE
-        .get_or_init(|| Regex::new(r#"(?is)<figure\b[^>]*\bid="([^"]+)"[^>]*>"#).unwrap());
+    let re =
+        FIGURE_RE.get_or_init(|| Regex::new(r#"(?is)<figure\b[^>]*\bid="([^"]+)"[^>]*>"#).unwrap());
     let mut map = HashMap::new();
     let mut n = 1u32;
     for cap in re.captures_iter(body) {
@@ -134,7 +134,10 @@ mod tests {
         let mut labels = HashMap::new();
         labels.insert("fig:a".to_string(), 3u32);
         let out = replace_figrefs(r"See \figref{fig:a}.", &labels);
-        assert!(out.contains(r##"<a href="#fig:a">Figure 3</a>"##), "got: {out}");
+        assert!(
+            out.contains(r##"<a href="#fig:a">Figure 3</a>"##),
+            "got: {out}"
+        );
     }
 
     #[test]

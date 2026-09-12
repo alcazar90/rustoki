@@ -75,7 +75,8 @@ cargo install --path /path/to/rustoki --locked
 - `content/config.toml` — site config (see `src/config.rs` for the schema).
 - `content/posts/*.md`, `content/pages/*.md` — Markdown with YAML or TOML
   frontmatter (`title`, `date`, `slug`, `tags`, `description`, `draft`,
-  `lang`).
+  `lang`, `toc`). A post with two or more headings gets a table of contents
+  automatically; `toc: false` leaves it out for that post.
 - `content/static/` — copied verbatim into `public/`; images are optimized to
   WebP derivatives at build time (requires `cwebp`/`gif2webp` on `PATH`, e.g.
   `brew install webp` / `apt-get install -y webp` — the build still succeeds
