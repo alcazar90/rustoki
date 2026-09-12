@@ -49,7 +49,7 @@ pub struct RenderedPost {
     pub html: String,
     pub reading_time_minutes: u32,
     /// Pre-rendered `<nav class="toc">` block, or empty if the post has fewer
-    /// than two headings.
+    /// than two headings or opted out with `toc: false` in its frontmatter.
     pub toc_html: String,
 }
 
@@ -145,7 +145,11 @@ pub fn render(
     let html = assets::rewrite_images(&html, images, site_url);
 
     // --- build TOC nav ---
-    let toc_html = if toc.len() >= 2 {
+    // `toc: false` in the frontmatter opts a post out regardless of how many
+    // headings it has; the heading anchors are still emitted above, so
+    // in-page links keep working without the nav.
+    let toc_wanted = source.frontmatter.toc.unwrap_or(true);
+    let toc_html = if toc_wanted && toc.len() >= 2 {
         build_toc_html(&toc)
     } else {
         String::new()
@@ -773,6 +777,21 @@ mod tests {
         );
         assert!(out.toc_html.contains("#alpha"), "got: {}", out.toc_html);
         assert!(out.toc_html.contains("#beta"), "got: {}", out.toc_html);
+    }
+
+    #[test]
+    fn toc_suppressed_by_frontmatter_but_anchors_remain() {
+        let md = "## Alpha\n\ntext.\n\n## Beta\n\nmore.\n";
+        let mut source = make_source(md, "post");
+        source.frontmatter.toc = Some(false);
+        let out = render(&source, &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        assert!(
+            out.toc_html.is_empty(),
+            "expected toc: false to suppress the nav; got: {}",
+            out.toc_html
+        );
+        assert!(out.html.contains(r#"id="alpha""#), "got: {}", out.html);
+        assert!(out.html.contains(r#"id="beta""#), "got: {}", out.html);
     }
 
     #[test]

@@ -31,6 +31,10 @@ pub struct Frontmatter {
     pub description: Option<String>,
     pub draft: Option<bool>,
     pub lang: Option<String>,
+    /// `toc: false` suppresses the table of contents for this post even when
+    /// it has enough headings to earn one. Unset (the default) means "auto":
+    /// a nav is emitted whenever the post has two or more headings.
+    pub toc: Option<bool>,
     #[serde(flatten)]
     #[allow(dead_code)] // captured for completeness; readers may inspect later.
     pub extra: BTreeMap<String, serde_yaml::Value>,
@@ -274,6 +278,30 @@ Body text.
         );
         assert_eq!(s.slug, "hello");
         assert!(s.body.starts_with("# Hi"));
+    }
+
+    #[test]
+    fn toc_flag_parses_from_both_frontmatter_kinds() {
+        let dir = TempDir::new("tocflag");
+        dir.write_post(
+            "2024-03-01-yaml-notoc.md",
+            "---\ntitle: No TOC\ndate: 2024-03-01\ntoc: false\n---\n\nBody.\n",
+        );
+        dir.write_post(
+            "2024-03-02-toml-notoc.md",
+            "+++\ntitle = \"No TOC\"\ndate = \"2024-03-02\"\ntoc = false\n+++\n\nBody.\n",
+        );
+        dir.write_post(
+            "2024-03-03-default.md",
+            "---\ntitle: Default\ndate: 2024-03-03\n---\n\nBody.\n",
+        );
+
+        let sources = walk(&dir.0, false).unwrap();
+        assert_eq!(sources.len(), 3);
+        let by_slug = |slug: &str| sources.iter().find(|s| s.slug == slug).unwrap();
+        assert_eq!(by_slug("yaml-notoc").frontmatter.toc, Some(false));
+        assert_eq!(by_slug("toml-notoc").frontmatter.toc, Some(false));
+        assert_eq!(by_slug("default").frontmatter.toc, None);
     }
 
     #[test]
