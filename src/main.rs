@@ -20,17 +20,16 @@ mod content;
 mod feed;
 mod margin;
 mod render;
+mod sandgarden;
 mod serve;
 mod templates;
-mod sandgarden;
 
 use crate::config::Config;
 use crate::content::Source;
 use crate::feed::{FeedEntry, SitemapEntry};
 use crate::templates::{
     IndexContext, PageContext, PageView, PostContext, PostListEntry, PostNeighbour, PostView,
-    Render404Context,
-    RenderEnv, Templates,
+    Render404Context, RenderEnv, Templates,
 };
 
 /// Inlined into every page's `<head>`. Single source of truth — no extra
@@ -88,7 +87,9 @@ fn main() -> ExitCode {
 
 fn usage() {
     eprintln!("rustoki v{}", env!("CARGO_PKG_VERSION"));
-    eprintln!("usage: rustoki <build [--drafts] | serve [--drafts] [--port <n>] | new-post \"<title>\">");
+    eprintln!(
+        "usage: rustoki <build [--drafts] | serve [--drafts] [--port <n>] | new-post \"<title>\">"
+    );
     eprintln!();
     eprintln!("  build              Render content/ to public/.");
     eprintln!("    --drafts         Also render draft: true posts, for local preview.");
@@ -196,8 +197,7 @@ fn cmd_build(include_drafts: bool) -> Result<()> {
 
     // Fresh build: blow away public/ so we don't accumulate stale output.
     if out_root.exists() {
-        fs::remove_dir_all(out_root)
-            .with_context(|| format!("clearing {}", out_root.display()))?;
+        fs::remove_dir_all(out_root).with_context(|| format!("clearing {}", out_root.display()))?;
     }
     fs::create_dir_all(out_root).with_context(|| format!("creating {}", out_root.display()))?;
 
@@ -233,15 +233,9 @@ fn cmd_build(include_drafts: bool) -> Result<()> {
                     older: older.map(|s| neighbour(s)),
                     newer: newer.map(|s| neighbour(s)),
                 };
-                let outcome = render_and_write_post(
-                    &templates,
-                    &env,
-                    source,
-                    neighbours,
-                    out_root,
-                    &images,
-                )
-                .with_context(|| format!("emitting post {}", source.slug))?;
+                let outcome =
+                    render_and_write_post(&templates, &env, source, neighbours, out_root, &images)
+                        .with_context(|| format!("emitting post {}", source.slug))?;
                 post_count += 1;
                 total_bytes += outcome.bytes;
                 index_entries.push(PostListEntry {
@@ -316,8 +310,7 @@ fn cmd_build(include_drafts: bool) -> Result<()> {
     // Atom feed with full post content.
     let feed_xml = feed::generate_atom(&config, &feed_entries);
     let feed_path = out_root.join("feed.xml");
-    fs::write(&feed_path, &feed_xml)
-        .with_context(|| format!("writing {}", feed_path.display()))?;
+    fs::write(&feed_path, &feed_xml).with_context(|| format!("writing {}", feed_path.display()))?;
 
     // Sitemap: home + every post + every page (404 deliberately excluded).
     // Home `lastmod` is the newest post's date, so feed readers and crawlers
@@ -354,15 +347,21 @@ fn cmd_build(include_drafts: bool) -> Result<()> {
     // derivatives so the "open full-resolution image" links resolve, and so
     // any URL that was ever published keeps working.
     if static_src.exists() {
-        copy_dir_recursive(&static_src, out_root)
-            .with_context(|| format!("copying {} to {}", static_src.display(), out_root.display()))?;
+        copy_dir_recursive(&static_src, out_root).with_context(|| {
+            format!("copying {} to {}", static_src.display(), out_root.display())
+        })?;
     }
 
     // Then the optimized derivatives, which mirror the same tree.
     let derivatives = assets::derivatives_dir(cache_root);
     if derivatives.exists() {
-        copy_dir_recursive(&derivatives, out_root)
-            .with_context(|| format!("copying {} to {}", derivatives.display(), out_root.display()))?;
+        copy_dir_recursive(&derivatives, out_root).with_context(|| {
+            format!(
+                "copying {} to {}",
+                derivatives.display(),
+                out_root.display()
+            )
+        })?;
     }
 
     eprintln!(
@@ -448,11 +447,7 @@ fn render_and_write_post(
 ) -> Result<PostOutcome> {
     let rendered = render::render(source, images, &env.site.url)?;
     let title = post_title(source);
-    let date = source
-        .frontmatter
-        .date
-        .clone()
-        .unwrap_or_default();
+    let date = source.frontmatter.date.clone().unwrap_or_default();
     let date_display = format_date(&date);
     let description = source
         .frontmatter
@@ -491,8 +486,7 @@ fn render_and_write_post(
     let html = templates.render_post(&ctx)?;
 
     let out_dir = out_root.join("posts").join(&source.slug);
-    fs::create_dir_all(&out_dir)
-        .with_context(|| format!("creating {}", out_dir.display()))?;
+    fs::create_dir_all(&out_dir).with_context(|| format!("creating {}", out_dir.display()))?;
     let out_path = out_dir.join("index.html");
     let bytes = html.len();
     fs::write(&out_path, html).with_context(|| format!("writing {}", out_path.display()))?;
@@ -545,8 +539,7 @@ fn render_and_write_page(
     let html = templates.render_page(&ctx)?;
 
     let out_dir = out_root.join(&source.slug);
-    fs::create_dir_all(&out_dir)
-        .with_context(|| format!("creating {}", out_dir.display()))?;
+    fs::create_dir_all(&out_dir).with_context(|| format!("creating {}", out_dir.display()))?;
     let out_path = out_dir.join("index.html");
     let bytes = html.len();
     fs::write(&out_path, html).with_context(|| format!("writing {}", out_path.display()))?;
@@ -610,11 +603,7 @@ fn cmd_new_post(title: &str) -> Result<()> {
 
 /// Inner helper for `cmd_new_post`. Split out so tests can pass an explicit
 /// temp dir + date — no cwd mutation, no system-clock flakes.
-fn new_post_at(
-    posts_dir: &Path,
-    title: &str,
-    date: &str,
-) -> Result<std::path::PathBuf> {
+fn new_post_at(posts_dir: &Path, title: &str, date: &str) -> Result<std::path::PathBuf> {
     let title = title.trim();
     let slug = slugify(title);
     if slug.is_empty() {
@@ -623,8 +612,7 @@ fn new_post_at(
             title
         ));
     }
-    fs::create_dir_all(posts_dir)
-        .with_context(|| format!("creating {}", posts_dir.display()))?;
+    fs::create_dir_all(posts_dir).with_context(|| format!("creating {}", posts_dir.display()))?;
     let filename = format!("{date}-{slug}.md");
     let path = posts_dir.join(&filename);
     if path.exists() {
@@ -819,13 +807,22 @@ mod tests {
             "unexpected output path"
         );
         let body = fs::read_to_string(&created).unwrap();
-        assert!(body.starts_with("---\n"), "missing frontmatter open: {body}");
-        assert!(body.contains("title: \"Hello World\""), "missing title: {body}");
+        assert!(
+            body.starts_with("---\n"),
+            "missing frontmatter open: {body}"
+        );
+        assert!(
+            body.contains("title: \"Hello World\""),
+            "missing title: {body}"
+        );
         assert!(body.contains("date: 2026-05-23"), "missing date: {body}");
         assert!(body.contains("slug: hello-world"), "missing slug: {body}");
         assert!(body.contains("tags: []"), "missing tags: {body}");
         assert!(body.contains("draft: true"), "missing draft flag: {body}");
-        assert!(body.ends_with("---\n\n\n"), "missing trailing blank lines: {body}");
+        assert!(
+            body.ends_with("---\n\n\n"),
+            "missing trailing blank lines: {body}"
+        );
 
         let _ = fs::remove_dir_all(&tmp);
     }

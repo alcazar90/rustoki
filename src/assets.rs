@@ -136,7 +136,9 @@ pub fn optimize(static_root: &Path, cache_root: &Path) -> (ImageManifest, Optimi
 
         let out = derivatives.join(rel).with_extension("webp");
         let src_bytes = file_len(&src);
-        let key = rel.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/");
+        let key = rel
+            .to_string_lossy()
+            .replace(std::path::MAIN_SEPARATOR, "/");
         let stamp = stamp_of(&src);
 
         let prior = previous
@@ -191,7 +193,10 @@ pub fn optimize(static_root: &Path, cache_root: &Path) -> (ImageManifest, Optimi
         let Ok(dims) = imagesize::size(&out) else {
             // Unreadable output — leave no stamp, so this retries next build
             // instead of caching a failure.
-            eprintln!("rustoki: warning: couldn't read dimensions of {}", out.display());
+            eprintln!(
+                "rustoki: warning: couldn't read dimensions of {}",
+                out.display()
+            );
             let _ = std::fs::remove_file(&out);
             report.skipped += 1;
             continue;
@@ -438,7 +443,10 @@ fn walk_images(root: &Path) -> Vec<PathBuf> {
 /// normalized to URL separators.
 fn to_url(rel: &Path) -> String {
     let mut s = String::from("/");
-    s.push_str(&rel.to_string_lossy().replace(std::path::MAIN_SEPARATOR, "/"));
+    s.push_str(
+        &rel.to_string_lossy()
+            .replace(std::path::MAIN_SEPARATOR, "/"),
+    );
     s
 }
 
@@ -527,16 +535,16 @@ fn rewrite_one(
     if let Some(entry) = entry {
         // Preserve any fragment/query the author wrote (legacy Hugo posts use
         // `#center`), so nothing that depended on it silently changes.
-        let suffix = src
-            .find(['#', '?'])
-            .map(|i| &src[i..])
-            .unwrap_or("");
+        let suffix = src.find(['#', '?']).map(|i| &src[i..]).unwrap_or("");
         let new_src = format!("{}{}", entry.optimized_url, suffix);
         tag = replace_src(&tag, &new_src);
         // Only supply intrinsic dimensions when the author didn't set an
         // explicit display size — overriding theirs would change the layout.
         if !has_attr(&tag, "width") && !has_attr(&tag, "height") {
-            tag = append_attrs(&tag, &format!(r#" width="{}" height="{}""#, entry.width, entry.height));
+            tag = append_attrs(
+                &tag,
+                &format!(r#" width="{}" height="{}""#, entry.width, entry.height),
+            );
         }
     }
 
@@ -628,7 +636,10 @@ mod tests {
         assert!(out.contains(r#"src="/img/a.webp""#), "{out}");
         assert!(out.contains(r#"width="1400""#), "{out}");
         assert!(out.contains(r#"height="700""#), "{out}");
-        assert!(out.contains(r#"<a class="img-original" href="/img/a.png""#), "{out}");
+        assert!(
+            out.contains(r#"<a class="img-original" href="/img/a.png""#),
+            "{out}"
+        );
         assert!(out.contains(r#"alt="A""#), "alt must survive: {out}");
     }
 
@@ -640,7 +651,10 @@ mod tests {
             "https://alkzar.cl",
         );
         let first = &out[..out.len() / 2];
-        assert!(!first.contains("loading="), "LCP image must stay eager: {first}");
+        assert!(
+            !first.contains("loading="),
+            "LCP image must stay eager: {first}"
+        );
         assert_eq!(out.matches(r#"loading="lazy""#).count(), 1, "{out}");
         assert_eq!(out.matches(r#"decoding="async""#).count(), 2, "{out}");
     }
@@ -761,7 +775,11 @@ mod tests {
 
         // Same length, different content — length alone is not enough.
         std::fs::write(&f, b"originql bytes").unwrap();
-        assert_ne!(stamp_of(&f).unwrap(), before, "same-length edit must invalidate");
+        assert_ne!(
+            stamp_of(&f).unwrap(),
+            before,
+            "same-length edit must invalidate"
+        );
 
         assert_eq!(stamp_of(&dir.join("missing.png")), None);
         let _ = std::fs::remove_dir_all(&dir);
@@ -796,8 +814,10 @@ mod tests {
 
         // A cache written before the field existed must not read back as
         // "rejected" — that would drop the image from every page.
-        let legacy: StampDb =
-            serde_json::from_str(r#"{"img/a.png":{"hash":7,"len":11}}"#).unwrap();
-        assert!(legacy["img/a.png"].useful, "legacy stamps default to usable");
+        let legacy: StampDb = serde_json::from_str(r#"{"img/a.png":{"hash":7,"len":11}}"#).unwrap();
+        assert!(
+            legacy["img/a.png"].useful,
+            "legacy stamps default to usable"
+        );
     }
 }

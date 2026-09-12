@@ -324,7 +324,12 @@ mod tests {
     #[test]
     fn only_the_newest_posts_get_stones() {
         let many: Vec<(&str, u32)> = (0..12)
-            .map(|i| (["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"][i], 5))
+            .map(|i| {
+                (
+                    ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"][i],
+                    5,
+                )
+            })
             .collect();
         assert!(stones_for(&many).len() <= MAX_STONES);
         let svg = build(&seeds(&many));
@@ -396,7 +401,10 @@ mod tests {
         // Outer grooves are markedly shorter than the middle one, at both ends.
         assert!(top.0 > middle.0 + SHOULDER / 2.0, "{top:?} vs {middle:?}");
         assert!(top.1 < middle.1 - SHOULDER / 2.0, "{top:?} vs {middle:?}");
-        assert!(bottom.1 < middle.1 - SHOULDER / 2.0, "{bottom:?} vs {middle:?}");
+        assert!(
+            bottom.1 < middle.1 - SHOULDER / 2.0,
+            "{bottom:?} vs {middle:?}"
+        );
         // No groove reaches the column edge, and none is degenerate.
         for (_, (x0, x1)) in &rows {
             assert!(*x0 >= 0.0 && *x1 <= WIDTH - END_MARGIN + END_JITTER);
@@ -406,10 +414,20 @@ mod tests {
         let steps: Vec<f32> = rows.windows(2).map(|w| w[1].1 .1 - w[0].1 .1).collect();
         assert!(steps.iter().any(|s| *s > 0.0) && steps.iter().any(|s| *s < 0.0));
         // And every stone row's bed still holds the widest possible bend.
-        let widest = Stone { cx: 0.0, cy: 0.0, rx: pebble_radius(u32::MAX) * 1.25, ry: 0.0, angle: 0.0 }.reach();
+        let widest = Stone {
+            cx: 0.0,
+            cy: 0.0,
+            rx: pebble_radius(u32::MAX) * 1.25,
+            ry: 0.0,
+            angle: 0.0,
+        }
+        .reach();
         for (y, (_, x1)) in &rows {
             if (*y - HEIGHT / 2.0).abs() <= HEIGHT / 2.0 - widest {
-                assert!(*x1 >= STONE_X_MAX, "row {y} ends at {x1} inside the stone field");
+                assert!(
+                    *x1 >= STONE_X_MAX,
+                    "row {y} ends at {x1} inside the stone field"
+                );
             }
         }
     }
@@ -437,4 +455,3 @@ mod tests {
         assert!(!svg.contains("NaN"));
     }
 }
-

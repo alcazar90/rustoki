@@ -369,12 +369,18 @@ mod tests {
             "newer post should be linked as rel=next: {html}"
         );
         assert!(html.contains("First Steps"), "older title missing: {html}");
-        assert!(html.contains("What Came After"), "newer title missing: {html}");
+        assert!(
+            html.contains("What Came After"),
+            "newer title missing: {html}"
+        );
         // The article's own clear-both pseudo-element must precede the nav,
         // so a long last sidenote cannot run over it (see main.css).
         let article_end = html.find("</article>").unwrap();
         let nav = html.find(r#"<nav class="post-nav""#).unwrap();
-        assert!(article_end < nav, "post nav should follow the article: {html}");
+        assert!(
+            article_end < nav,
+            "post nav should follow the article: {html}"
+        );
     }
 
     #[test]
@@ -407,7 +413,10 @@ mod tests {
             })
             .unwrap();
         assert!(html.contains(r#"rel="prev""#), "older link missing: {html}");
-        assert!(!html.contains(r#"rel="next""#), "spurious newer link: {html}");
+        assert!(
+            !html.contains(r#"rel="next""#),
+            "spurious newer link: {html}"
+        );
     }
 
     #[test]
@@ -620,7 +629,10 @@ mod tests {
         };
         let html = templates.render_index(&ctx).unwrap();
         assert!(html.contains("Test Site"), "missing site title in: {html}");
-        assert!(html.contains("On RL"), "missing first post title in: {html}");
+        assert!(
+            html.contains("On RL"),
+            "missing first post title in: {html}"
+        );
         assert!(
             html.contains("Older Thoughts"),
             "missing second post title in: {html}"
@@ -640,10 +652,23 @@ mod tests {
         );
         // The newest post is also previewed in the "Latest" block, with its
         // reading time and description; older ones are only listed.
-        assert!(html.contains("class=\"latest\""), "missing latest block in: {html}");
-        assert!(html.contains("4 min read"), "missing reading time in: {html}");
-        assert!(html.contains("Notes on reward."), "missing excerpt in: {html}");
-        assert_eq!(html.matches("Keep reading").count(), 1, "one excerpt only: {html}");
+        assert!(
+            html.contains("class=\"latest\""),
+            "missing latest block in: {html}"
+        );
+        assert!(
+            html.contains("4 min read"),
+            "missing reading time in: {html}"
+        );
+        assert!(
+            html.contains("Notes on reward."),
+            "missing excerpt in: {html}"
+        );
+        assert_eq!(
+            html.matches("Keep reading").count(),
+            1,
+            "one excerpt only: {html}"
+        );
     }
 
     #[test]
@@ -671,9 +696,18 @@ mod tests {
             garden: "",
         };
         let html = templates.render_index(&ctx).unwrap();
-        assert!(html.contains("class=\"latest\""), "missing latest block in: {html}");
-        assert!(!html.contains("Keep reading"), "excerpt without description in: {html}");
-        assert!(html.contains("1 min read"), "missing reading time in: {html}");
+        assert!(
+            html.contains("class=\"latest\""),
+            "missing latest block in: {html}"
+        );
+        assert!(
+            !html.contains("Keep reading"),
+            "excerpt without description in: {html}"
+        );
+        assert!(
+            html.contains("1 min read"),
+            "missing reading time in: {html}"
+        );
     }
 
     #[test]
@@ -710,10 +744,7 @@ mod tests {
         let ctx = Render404Context { env };
         let html = templates.render_404(&ctx).unwrap();
         assert!(html.contains("404"), "missing '404' in: {html}");
-        assert!(
-            html.contains("href=\"/\""),
-            "missing home link in: {html}"
-        );
+        assert!(html.contains("href=\"/\""), "missing home link in: {html}");
         assert!(html.contains("Test Site"), "missing site chrome in: {html}");
     }
 }

@@ -147,8 +147,8 @@ impl Config {
         let path = path.as_ref();
         let raw = fs::read_to_string(path)
             .with_context(|| format!("reading config from {}", path.display()))?;
-        let config: Self = toml::from_str(&raw)
-            .with_context(|| format!("parsing TOML in {}", path.display()))?;
+        let config: Self =
+            toml::from_str(&raw).with_context(|| format!("parsing TOML in {}", path.display()))?;
         Ok(config)
     }
 }
@@ -296,7 +296,10 @@ description = "D"
 [margin]
 "#,
         );
-        let m = Config::load(&path).unwrap().margin.expect("margin should parse");
+        let m = Config::load(&path)
+            .unwrap()
+            .margin
+            .expect("margin should parse");
         assert_eq!(m.character, "traveller");
         assert_eq!(m.first_delay, 40);
         assert_eq!(m.interval, [90, 180]);

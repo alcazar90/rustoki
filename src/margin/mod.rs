@@ -194,7 +194,9 @@ pub fn build(cfg: &MarginConfig) -> Option<Margin> {
     // --- atlas ------------------------------------------------------------
     // Only the frames this character owns are emitted; an unused pose in the
     // cast costs nothing on the wire.
-    let mut atlas = String::from(r#"<svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>"#);
+    let mut atlas = String::from(
+        r#"<svg width="0" height="0" aria-hidden="true" style="position:absolute"><defs>"#,
+    );
     for f in ch.frames {
         atlas.push_str(&sprite::symbol(
             &format!("mg-{}", f.role),
@@ -361,7 +363,11 @@ mod tests {
             );
             assert!(ch.frame(WALK_A).is_some(), "{} has no walk_a", ch.name);
             assert!(ch.frame(WALK_B).is_some(), "{} has no walk_b", ch.name);
-            assert!(!playable(ch).is_empty(), "{} has no playable routine", ch.name);
+            assert!(
+                !playable(ch).is_empty(),
+                "{} has no playable routine",
+                ch.name
+            );
         }
     }
 
@@ -370,7 +376,11 @@ mod tests {
         // They are the config key, so a duplicate would silently shadow.
         let mut seen: Vec<&str> = Vec::new();
         for ch in cast::CAST {
-            assert!(!seen.contains(&ch.name), "duplicate character \"{}\"", ch.name);
+            assert!(
+                !seen.contains(&ch.name),
+                "duplicate character \"{}\"",
+                ch.name
+            );
             seen.push(ch.name);
         }
     }
@@ -417,7 +427,11 @@ mod tests {
         // The runtime moves whatever it finds, so a lightless character must
         // not leave an empty aura element behind either.
         for ch in cast::CAST {
-            let m = build(&MarginConfig { character: ch.name.into(), ..cfg() }).unwrap();
+            let m = build(&MarginConfig {
+                character: ch.name.into(),
+                ..cfg()
+            })
+            .unwrap();
             assert_eq!(
                 m.stage.contains("mg-aura"),
                 ch.light.is_some(),

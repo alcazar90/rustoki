@@ -512,13 +512,22 @@ mod tests {
                   \x20 <figcaption>A caption with \\\\(x + y\\\\) inline math.</figcaption>\n\
                   </figure>\n\n\
                   See \\figref{fig:demo} for details.\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(
             out.html.contains("<math"),
             "expected figcaption math rendered to MathML; got: {}",
             out.html
         );
-        assert!(!out.html.contains('$'), "literal $ leaked through: {}", out.html);
+        assert!(
+            !out.html.contains('$'),
+            "literal $ leaked through: {}",
+            out.html
+        );
         assert!(
             out.html.contains("Figure 1. A caption"),
             "expected auto-numbered caption; got: {}",
@@ -535,14 +544,20 @@ mod tests {
     fn equation_ref_links_jump_to_labeled_equation() {
         let md = "See Equation~(\\ref{eqn:foo}) below.\n\n\
                   $$\n\\begin{equation}\\label{eqn:foo}\nx = y\n\\end{equation}\n$$\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(
             out.html.contains(r##"<a href="#eqn:foo">1</a>"##),
             "expected linked ref; got: {}",
             out.html
         );
         assert!(
-            out.html.contains(r#"<div class="math display numbered" id="eqn:foo">"#),
+            out.html
+                .contains(r#"<div class="math display numbered" id="eqn:foo">"#),
             "expected anchored equation div; got: {}",
             out.html
         );
@@ -557,20 +572,31 @@ mod tests {
     #[test]
     fn latex_footnote_renders_as_a_sidenote() {
         let md = "Replacing $R(\\tau)$ naively\\footnote{The same applies for discounted returns.} works.\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
-        assert!(!out.html.contains("\\footnote"), "command leaked: {}", out.html);
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
+        assert!(
+            !out.html.contains("\\footnote"),
+            "command leaked: {}",
+            out.html
+        );
         assert!(
             out.html.contains(r#"<label class="sn-mark" for="sn-1""#),
             "expected a sidenote mark; got: {}",
             out.html
         );
         assert!(
-            out.html.contains(r#"<span class="sidenote" role="doc-footnote">"#),
+            out.html
+                .contains(r#"<span class="sidenote" role="doc-footnote">"#),
             "expected a sidenote; got: {}",
             out.html
         );
         assert!(
-            out.html.contains("The same applies for discounted returns."),
+            out.html
+                .contains("The same applies for discounted returns."),
             "expected the note body; got: {}",
             out.html
         );
@@ -579,13 +605,23 @@ mod tests {
     #[test]
     fn markdown_footnote_renders_as_the_same_sidenote() {
         let md = "Some claim.[^why]\n\n[^why]: Because of a reason.\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(
-            out.html.contains(r#"<span class="sidenote" role="doc-footnote">"#),
+            out.html
+                .contains(r#"<span class="sidenote" role="doc-footnote">"#),
             "expected a sidenote; got: {}",
             out.html
         );
-        assert!(out.html.contains("Because of a reason."), "got: {}", out.html);
+        assert!(
+            out.html.contains("Because of a reason."),
+            "got: {}",
+            out.html
+        );
         // pulldown-cmark's own footnote rendering must not also appear.
         assert!(
             !out.html.contains("footnote-definition"),
@@ -598,11 +634,23 @@ mod tests {
     fn footnote_body_goes_through_the_full_inline_pipeline() {
         // A note body is walked by `transform_events` like any other content,
         // so math and links inside it render rather than passing through raw.
-        let md = "Claim\\footnote{Holds when $x > 0$, see [the paper](https://example.com).} here.\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
-        let note_start = out.html.find(r#"<span class="sidenote""#).expect("no sidenote");
+        let md =
+            "Claim\\footnote{Holds when $x > 0$, see [the paper](https://example.com).} here.\n";
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
+        let note_start = out
+            .html
+            .find(r#"<span class="sidenote""#)
+            .expect("no sidenote");
         let note = &out.html[note_start..];
-        assert!(note.contains("<math"), "expected MathML in the note; got: {note}");
+        assert!(
+            note.contains("<math"),
+            "expected MathML in the note; got: {note}"
+        );
         assert!(
             note.contains(r#"<a href="https://example.com">"#),
             "expected a link in the note; got: {note}"
@@ -615,8 +663,16 @@ mod tests {
         // The note sits mid-paragraph, so a <p> or <div> inside it would be
         // hoisted out by the HTML parser and take the float with it.
         let md = "Claim\\footnote{A note with $$y = x$$ display math.} here.\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
-        let note_start = out.html.find(r#"<span class="sidenote""#).expect("no sidenote");
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
+        let note_start = out
+            .html
+            .find(r#"<span class="sidenote""#)
+            .expect("no sidenote");
         let note_end = note_start
             + out.html[note_start..]
                 .find("</p>")
@@ -629,7 +685,12 @@ mod tests {
     #[test]
     fn footnotes_are_numbered_by_first_reference() {
         let md = "One\\footnote{first note} two\\footnote{second note} three.\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         let one = out.html.find("first note").expect("note 1 missing");
         let two = out.html.find("second note").expect("note 2 missing");
         assert!(one < two, "notes out of order: {}", out.html);
@@ -640,7 +701,12 @@ mod tests {
     #[test]
     fn footnote_written_in_a_code_span_stays_literal() {
         let md = "Write `\\footnote{a note}` to add one.\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(
             out.html.contains("footnote{a note}"),
             "expected literal text in the code span; got: {}",
@@ -652,7 +718,12 @@ mod tests {
     #[test]
     fn renders_python_code_block_with_syntect_classes() {
         let md = "```python\ndef greet(name):\n    return f\"hi, {name}\"\n```\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(out.html.contains("<pre>"), "html: {}", out.html);
         assert!(
             out.html.contains("<span class=\""),
@@ -664,7 +735,12 @@ mod tests {
     #[test]
     fn renders_inline_math_to_mathml() {
         let md = "Here is $a + b$ inline.\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(
             out.html.contains("<math"),
             "expected <math> element; got: {}",
@@ -680,7 +756,12 @@ mod tests {
     #[test]
     fn renders_display_math_to_mathml() {
         let md = "Behold:\n\n$$\\sum x$$\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(
             out.html.contains("<math"),
             "expected <math> element; got: {}",
@@ -696,7 +777,12 @@ mod tests {
     #[test]
     fn code_fence_without_language_does_not_crash() {
         let md = "```\njust some text\n```\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(out.html.contains("<pre>"));
         assert!(out.html.contains("just some text"));
     }
@@ -704,7 +790,12 @@ mod tests {
     #[test]
     fn unknown_language_falls_back_cleanly() {
         let md = "```not-a-real-language\nfoo bar\n```\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(out.html.contains("<pre>"));
         assert!(out.html.contains("foo bar"));
     }
@@ -712,7 +803,12 @@ mod tests {
     #[test]
     fn relative_image_url_is_rewritten() {
         let md = "![alt](thumb.png)\n";
-        let out = render(&make_source(md, "my-post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "my-post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(
             out.html.contains("/posts/my-post/thumb.png"),
             "expected rewritten image src; got: {}",
@@ -723,7 +819,12 @@ mod tests {
     #[test]
     fn absolute_image_url_is_preserved() {
         let md = "![alt](https://example.com/img.png)\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(out.html.contains("https://example.com/img.png"));
         assert!(!out.html.contains("/posts/post/https"));
     }
@@ -731,7 +832,12 @@ mod tests {
     #[test]
     fn reading_time_minimum_is_one() {
         let md = "tiny.";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert_eq!(out.reading_time_minutes, 1);
     }
 
@@ -739,21 +845,36 @@ mod tests {
     fn reading_time_scales_with_words() {
         let words: Vec<&str> = std::iter::repeat("lorem").take(660).collect();
         let body = words.join(" ");
-        let out = render(&make_source(&body, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(&body, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert_eq!(out.reading_time_minutes, 3);
     }
 
     #[test]
     fn malformed_math_falls_back_to_code_block() {
         let md = "Bad: $\\frac{1$ here.\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(!out.html.is_empty());
     }
 
     #[test]
     fn headings_get_id_anchors() {
         let md = "## Hello World\n\nSome text.\n\n### Sub Section\n\nMore text.\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(
             out.html.contains(r#"id="hello-world""#),
             "got: {}",
@@ -769,7 +890,12 @@ mod tests {
     #[test]
     fn toc_generated_for_multi_heading_post() {
         let md = "## Alpha\n\ntext.\n\n## Beta\n\nmore.\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(
             out.toc_html.contains("class=\"toc\""),
             "expected toc nav; got: {}",
@@ -784,7 +910,12 @@ mod tests {
         let md = "## Alpha\n\ntext.\n\n## Beta\n\nmore.\n";
         let mut source = make_source(md, "post");
         source.frontmatter.toc = Some(false);
-        let out = render(&source, &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &source,
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(
             out.toc_html.is_empty(),
             "expected toc: false to suppress the nav; got: {}",
@@ -797,7 +928,12 @@ mod tests {
     #[test]
     fn toc_empty_for_single_heading() {
         let md = "## Only One\n\ntext.\n";
-        let out = render(&make_source(md, "post"), &assets::ImageManifest::default(), "https://alkzar.cl").unwrap();
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
         assert!(
             out.toc_html.is_empty(),
             "expected empty toc for single heading; got: {}",

@@ -80,7 +80,9 @@ fn runs(sprite: &Sprite) -> BTreeMap<char, Vec<(u32, u32, u32)>> {
             while x + n < cells.len() && cells[x + n] == ch {
                 n += 1;
             }
-            out.entry(ch).or_default().push((x as u32, y as u32, n as u32));
+            out.entry(ch)
+                .or_default()
+                .push((x as u32, y as u32, n as u32));
             x += n;
         }
     }
@@ -118,7 +120,11 @@ mod tests {
 
     #[test]
     fn merges_horizontal_runs_into_one_subpath() {
-        let s = Sprite { w: 4, h: 1, rows: &["aaaa"] };
+        let s = Sprite {
+            w: 4,
+            h: 1,
+            rows: &["aaaa"],
+        };
         let out = symbol("t", &s, PAL);
         assert!(out.contains("M0 0h4v1h-4z"), "got {out}");
         assert_eq!(out.matches("<path").count(), 1);
@@ -126,14 +132,22 @@ mod tests {
 
     #[test]
     fn one_path_per_colour_not_per_run() {
-        let s = Sprite { w: 4, h: 2, rows: &["abab", "aabb"] };
+        let s = Sprite {
+            w: 4,
+            h: 2,
+            rows: &["abab", "aabb"],
+        };
         let out = symbol("t", &s, PAL);
         assert_eq!(out.matches("<path").count(), 2, "got {out}");
     }
 
     #[test]
     fn transparent_cells_break_runs() {
-        let s = Sprite { w: 5, h: 1, rows: &["aa.aa"] };
+        let s = Sprite {
+            w: 5,
+            h: 1,
+            rows: &["aa.aa"],
+        };
         let out = symbol("t", &s, PAL);
         assert!(out.contains("M0 0h2v1h-2z"), "got {out}");
         assert!(out.contains("M3 0h2v1h-2z"), "got {out}");
@@ -141,13 +155,21 @@ mod tests {
 
     #[test]
     fn emission_is_byte_stable() {
-        let s = Sprite { w: 4, h: 2, rows: &["abab", "baba"] };
+        let s = Sprite {
+            w: 4,
+            h: 2,
+            rows: &["abab", "baba"],
+        };
         assert_eq!(symbol("t", &s, PAL), symbol("t", &s, PAL));
     }
 
     #[test]
     fn defects_catch_ragged_grids() {
-        let s = Sprite { w: 4, h: 2, rows: &["aaaa", "aaa"] };
+        let s = Sprite {
+            w: 4,
+            h: 2,
+            rows: &["aaaa", "aaa"],
+        };
         let d = s.defects();
         assert_eq!(d.len(), 1);
         assert!(d[0].contains("row 1"), "got {d:?}");
@@ -155,19 +177,31 @@ mod tests {
 
     #[test]
     fn defects_catch_wrong_row_count() {
-        let s = Sprite { w: 2, h: 3, rows: &["aa", "aa"] };
+        let s = Sprite {
+            w: 2,
+            h: 3,
+            rows: &["aa", "aa"],
+        };
         assert!(s.defects().iter().any(|d| d.contains("height 3")));
     }
 
     #[test]
     fn unpainted_reports_missing_palette_entries() {
-        let s = Sprite { w: 3, h: 1, rows: &["abz"] };
+        let s = Sprite {
+            w: 3,
+            h: 1,
+            rows: &["abz"],
+        };
         assert_eq!(s.unpainted(PAL), vec!['z']);
     }
 
     #[test]
     fn unpainted_characters_are_dropped_not_guessed() {
-        let s = Sprite { w: 2, h: 1, rows: &["az"] };
+        let s = Sprite {
+            w: 2,
+            h: 1,
+            rows: &["az"],
+        };
         let out = symbol("t", &s, PAL);
         assert_eq!(out.matches("<path").count(), 1, "got {out}");
     }

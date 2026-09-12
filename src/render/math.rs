@@ -110,10 +110,8 @@ fn normalize_delimiters(body: &str) -> String {
     // Source uses `\\(...\\)` and `\\[...\\]` — TWO backslashes each.
     static DISPLAY_RE: OnceLock<Regex> = OnceLock::new();
     static INLINE_RE: OnceLock<Regex> = OnceLock::new();
-    let display =
-        DISPLAY_RE.get_or_init(|| Regex::new(r"(?s)\\\\\[(.*?)\\\\\]").unwrap());
-    let inline =
-        INLINE_RE.get_or_init(|| Regex::new(r"\\\\\((.*?)\\\\\)").unwrap());
+    let display = DISPLAY_RE.get_or_init(|| Regex::new(r"(?s)\\\\\[(.*?)\\\\\]").unwrap());
+    let inline = INLINE_RE.get_or_init(|| Regex::new(r"\\\\\((.*?)\\\\\)").unwrap());
 
     let body = display.replace_all(body, |caps: &regex::Captures| {
         let single_line: String = caps[1]
@@ -136,8 +134,7 @@ fn normalize_delimiters(body: &str) -> String {
 
 fn strip_unsupported_envs(body: &str) -> String {
     static ENV_RE: OnceLock<Regex> = OnceLock::new();
-    let env = ENV_RE
-        .get_or_init(|| Regex::new(r"\\(?:begin|end)\{equation\*?\}").unwrap());
+    let env = ENV_RE.get_or_init(|| Regex::new(r"\\(?:begin|end)\{equation\*?\}").unwrap());
     env.replace_all(body, "").into_owned()
 }
 
@@ -268,7 +265,7 @@ fn replace_refs(body: &str, labels: &HashMap<String, u32>) -> String {
     static EQREF_RE: OnceLock<Regex> = OnceLock::new();
     static REF_RE: OnceLock<Regex> = OnceLock::new();
     let eqref = EQREF_RE.get_or_init(|| Regex::new(r"\\eqref\{([^}]+)\}").unwrap());
-    let rref  = REF_RE.get_or_init(|| Regex::new(r"\\ref\s*\{([^}]+)\}").unwrap());
+    let rref = REF_RE.get_or_init(|| Regex::new(r"\\ref\s*\{([^}]+)\}").unwrap());
 
     let s = eqref.replace_all(body, |c: &regex::Captures| {
         let key = &c[1];
@@ -299,10 +296,10 @@ fn replace_refs(body: &str, labels: &HashMap<String, u32>) -> String {
 fn wrap_standalone_equations(body: &str) -> String {
     static DISPLAY_RE: OnceLock<Regex> = OnceLock::new();
     static STANDALONE_RE: OnceLock<Regex> = OnceLock::new();
-    let display_re = DISPLAY_RE
-        .get_or_init(|| Regex::new(r"(?s)\\\\\[(.*?)\\\\\]").unwrap());
-    let standalone_re = STANDALONE_RE
-        .get_or_init(|| Regex::new(r"(?s)\\begin\{equation\*?\}(.*?)\\end\{equation\*?\}").unwrap());
+    let display_re = DISPLAY_RE.get_or_init(|| Regex::new(r"(?s)\\\\\[(.*?)\\\\\]").unwrap());
+    let standalone_re = STANDALONE_RE.get_or_init(|| {
+        Regex::new(r"(?s)\\begin\{equation\*?\}(.*?)\\end\{equation\*?\}").unwrap()
+    });
 
     // Step 1 — hide \\[…\\] blocks behind sentinels.
     let mut saved: Vec<String> = Vec::new();
@@ -355,7 +352,10 @@ mod tests {
         let input = "See \\\\( \\tau^{(i)} \\\\) here.";
         let out = preprocess_source(input);
         assert!(out.contains("$\\tau^{(i)}$"), "got: {out}");
-        assert!(!out.contains("$ \\tau"), "leading space leaked into delimiter: {out}");
+        assert!(
+            !out.contains("$ \\tau"),
+            "leading space leaked into delimiter: {out}"
+        );
     }
 
     #[test]
@@ -367,8 +367,7 @@ mod tests {
 
     #[test]
     fn equation_env_is_stripped_but_label_survives_for_anchor() {
-        let input =
-            "\\\\[ \\begin{equation}\\label{eq:foo} x = y \\end{equation} \\\\]";
+        let input = "\\\\[ \\begin{equation}\\label{eq:foo} x = y \\end{equation} \\\\]";
         let out = preprocess_source(input);
         assert!(out.contains("$$"), "delimiters: {out}");
         assert!(!out.contains("\\begin{equation}"), "begin remained: {out}");
@@ -381,7 +380,8 @@ mod tests {
 
     #[test]
     fn standalone_equation_env_becomes_display_math() {
-        let input = "Text.\n\n\\begin{equation}\\label{eq:bar}\n    x = y + z\n\\end{equation}\n\nMore.";
+        let input =
+            "Text.\n\n\\begin{equation}\\label{eq:bar}\n    x = y + z\n\\end{equation}\n\nMore.";
         let out = preprocess_source(input);
         assert!(out.contains("$$"), "missing display delimiters: {out}");
         assert!(!out.contains("\\begin{equation}"), "begin remained: {out}");
@@ -425,13 +425,15 @@ mod tests {
     fn unknown_ref_renders_as_broken_marker() {
         let input = "See \\ref{eqn:missing} here.";
         let out = preprocess_source(input);
-        assert!(out.contains("[?:eqn:missing]"), "expected broken-ref marker: {out}");
+        assert!(
+            out.contains("[?:eqn:missing]"),
+            "expected broken-ref marker: {out}"
+        );
     }
 
     #[test]
     fn split_env_is_preserved() {
-        let input =
-            "\\\\[ \\begin{split} a &= b \\\\ &= c \\end{split} \\\\]";
+        let input = "\\\\[ \\begin{split} a &= b \\\\ &= c \\end{split} \\\\]";
         let out = preprocess_source(input);
         assert!(out.contains("\\begin{split}"), "split lost: {out}");
         assert!(out.contains("\\end{split}"), "end split lost: {out}");
@@ -467,15 +469,28 @@ mod tests {
         // The matrix-internal \\ must survive; the outer trailing \\ must not.
         assert!(out.contains("\\begin{bmatrix}"), "bmatrix lost: {out}");
         // Outer trailing \\ should be gone; count top-level $$ pairs.
-        assert_eq!(out.matches("$$").count(), 2, "expected one $$…$$ pair: {out}");
+        assert_eq!(
+            out.matches("$$").count(),
+            2,
+            "expected one $$…$$ pair: {out}"
+        );
         // Ensure the block didn't get needlessly wrapped in aligned.
-        assert!(!out.contains("\\begin{aligned}"), "spurious aligned wrap: {out}");
+        assert!(
+            !out.contains("\\begin{aligned}"),
+            "spurious aligned wrap: {out}"
+        );
         // Regression: re-wrapping must not introduce a blank line right after
         // the opening `$$` — that splits the block into two CommonMark
         // paragraphs, and pulldown-cmark then fails to recognize the `$$`
         // pair as math at all (see `display_math_survives_paragraph_split`).
-        assert!(!out.contains("$$\n\n"), "blank line after opening $$: {out}");
-        assert!(!out.contains("\n\n$$"), "blank line before closing $$: {out}");
+        assert!(
+            !out.contains("$$\n\n"),
+            "blank line after opening $$: {out}"
+        );
+        assert!(
+            !out.contains("\n\n$$"),
+            "blank line before closing $$: {out}"
+        );
     }
 
     #[test]
@@ -500,7 +515,10 @@ mod tests {
         let has_display_math = events
             .iter()
             .any(|e| matches!(e, pulldown_cmark::Event::DisplayMath(_)));
-        assert!(has_display_math, "expected a DisplayMath event, got: {events:?}");
+        assert!(
+            has_display_math,
+            "expected a DisplayMath event, got: {events:?}"
+        );
         let has_strikethrough = events.iter().any(|e| {
             matches!(
                 e,
@@ -549,7 +567,10 @@ mod tests {
         let has_display_math = events
             .iter()
             .any(|e| matches!(e, pulldown_cmark::Event::DisplayMath(_)));
-        assert!(has_display_math, "expected a DisplayMath event, got: {events:?}");
+        assert!(
+            has_display_math,
+            "expected a DisplayMath event, got: {events:?}"
+        );
     }
 
     #[test]
@@ -563,7 +584,10 @@ mod tests {
         // Two expressions separated by \\ at the top level must be wrapped.
         let input = "$$\n\\boldsymbol y = [1,0,2,1] \\\\\n\\hat{\\boldsymbol y} = [2,0,2,0]\n$$";
         let out = preprocess_source(input);
-        assert!(out.contains("\\begin{aligned}"), "missing aligned wrap: {out}");
+        assert!(
+            out.contains("\\begin{aligned}"),
+            "missing aligned wrap: {out}"
+        );
         assert!(out.contains("\\end{aligned}"), "missing aligned end: {out}");
         assert!(out.contains("\\boldsymbol y"), "content lost: {out}");
         assert!(out.contains("\\\\"), "line-break removed: {out}");
@@ -574,7 +598,10 @@ mod tests {
         // \\ inside \begin{bmatrix}…\end{bmatrix} is depth > 0 — do not wrap.
         let input = "$$\n\\begin{bmatrix}a & b\\\\c & d\\end{bmatrix}\n$$";
         let out = preprocess_source(input);
-        assert!(!out.contains("\\begin{aligned}"), "incorrectly wrapped: {out}");
+        assert!(
+            !out.contains("\\begin{aligned}"),
+            "incorrectly wrapped: {out}"
+        );
         assert!(out.contains("\\begin{bmatrix}"), "bmatrix lost: {out}");
     }
 

@@ -57,7 +57,16 @@ const fn beat(
     prop_lit: bool,
     fade_ms: u32,
 ) -> Beat {
-    Beat { name, ms, y, opacity, walking, pose, prop_lit, fade_ms }
+    Beat {
+        name,
+        ms,
+        y,
+        opacity,
+        walking,
+        pose,
+        prop_lit,
+        fade_ms,
+    }
 }
 
 /// The default crossing. He walks up the page away from the reader, stops once

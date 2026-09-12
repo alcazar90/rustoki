@@ -139,10 +139,9 @@ pub fn walk(root: &Path, include_drafts: bool) -> Result<Vec<Source>> {
 }
 
 fn parse_file(path: &Path, include_drafts: bool) -> Result<Option<Source>> {
-    let raw = fs::read_to_string(path)
-        .with_context(|| format!("reading {}", path.display()))?;
-    let (front_raw, body, kind) = split_frontmatter(&raw)
-        .ok_or_else(|| anyhow!("no frontmatter delimiter found"))?;
+    let raw = fs::read_to_string(path).with_context(|| format!("reading {}", path.display()))?;
+    let (front_raw, body, kind) =
+        split_frontmatter(&raw).ok_or_else(|| anyhow!("no frontmatter delimiter found"))?;
     let frontmatter = parse_frontmatter(front_raw, kind)
         .with_context(|| format!("parsing frontmatter in {}", path.display()))?;
 

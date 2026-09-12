@@ -33,13 +33,13 @@ pub fn highlight(code: &str, lang: &str) -> String {
         return plain(code, trimmed_lang);
     };
 
-    let mut gen = ClassedHTMLGenerator::new_with_class_style(
-        syntax,
-        &SYNTAX_SET,
-        ClassStyle::Spaced,
-    );
+    let mut gen =
+        ClassedHTMLGenerator::new_with_class_style(syntax, &SYNTAX_SET, ClassStyle::Spaced);
     for line in LinesWithEndings::from(code) {
-        if gen.parse_html_for_line_which_includes_newline(line).is_err() {
+        if gen
+            .parse_html_for_line_which_includes_newline(line)
+            .is_err()
+        {
             return plain(code, trimmed_lang);
         }
     }

@@ -222,7 +222,6 @@ const T_REST: &[&str] = &[
     ".....oooo.oooo....",
 ];
 
-
 /// The waystone. The site's own footer mark — two stones — stood upright, so
 /// the scenery comes out of the site's identity instead of out of a JRPG.
 const WAYSTONE_PAL: Palette = &[
@@ -259,17 +258,49 @@ const TRAVELLER: Character = Character {
     h: 24,
     x: 2,
     frames: &[
-        Frame { role: WALK_A, sprite: Sprite { w: 18, h: 24, rows: T_WALK_A } },
-        Frame { role: WALK_B, sprite: Sprite { w: 18, h: 24, rows: T_WALK_B } },
-        Frame { role: "face", sprite: Sprite { w: 18, h: 24, rows: T_FACE } },
-        Frame { role: "rest", sprite: Sprite { w: 18, h: 24, rows: T_REST } },
+        Frame {
+            role: WALK_A,
+            sprite: Sprite {
+                w: 18,
+                h: 24,
+                rows: T_WALK_A,
+            },
+        },
+        Frame {
+            role: WALK_B,
+            sprite: Sprite {
+                w: 18,
+                h: 24,
+                rows: T_WALK_B,
+            },
+        },
+        Frame {
+            role: "face",
+            sprite: Sprite {
+                w: 18,
+                h: 24,
+                rows: T_FACE,
+            },
+        },
+        Frame {
+            role: "rest",
+            sprite: Sprite {
+                w: 18,
+                h: 24,
+                rows: T_REST,
+            },
+        },
     ],
     // The lantern hangs off the staff on his left; the pool it throws sits on
     // the ground under it, not at the height of the flame.
     light: Some((2, 3)),
     prop: Some(Prop {
         palette: WAYSTONE_PAL,
-        sprite: Sprite { w: 19, h: 12, rows: WAYSTONE },
+        sprite: Sprite {
+            w: 19,
+            h: 12,
+            rows: WAYSTONE,
+        },
         x: 21,
         y: 15,
     }),

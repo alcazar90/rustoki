@@ -405,7 +405,10 @@ mod tests {
         assert!(html.contains("hello world"), "got: {html}");
         assert!(html.contains("182 Likes"), "got: {html}");
         assert!(html.contains("5 Replies"), "got: {html}");
-        assert!(html.contains("tweet-card-badge"), "expected verified badge: {html}");
+        assert!(
+            html.contains("tweet-card-badge"),
+            "expected verified badge: {html}"
+        );
         assert!(
             html.contains("https://twitter.com/suzatweet/status/1166347201766780928"),
             "got: {html}"
