@@ -28,11 +28,15 @@
     "Roboto Mono", Menlo, Monaco, Consolas, monospace;
   --font-small:   0.875em;
   --font-smaller: 0.8em;
-  /* Two weights on the whole page: this one for anything that has to hold
-     its own against body text, 400 for everything else. 500 in the system
-     font read as slightly darker prose rather than a heading; 300 for the
+  /* Heading weight follows size. Headings set larger than the prose (h1-h3
+     and the home page's latest title) get 500: their size already separates
+     them, and 600 at h1 size in the system font read as a banner. Anything
+     body-sized that still has to hold its own against the prose (h4-h6, the
+     draft badge, the ToC summary) gets 600, since weight is all it has; 500
+     there read as slightly darker prose rather than a heading. 300 for the
      site title was thin on macOS and silently 400 on the fallbacks. */
   --heading-weight: 600;
+  --heading-weight-large: 500;
   /* Head margin: the space between the browser's chrome and the site title.
      Fixed at 2rem the title sat close enough to the toolbar to read as one
      more row of it. The vw term makes the margin behave like the column's
@@ -97,6 +101,7 @@ h1, h2, h3, h4, h5, h6 {
 h1 { font-size: clamp(1.6em, 1.35em + .8vw, 2em); margin: 1.5em 0 0.25em; letter-spacing: -0.02em; }
 h2 { font-size: 1.5em; margin: 2rem 0 0.75rem; letter-spacing: -0.015em; }
 h3 { font-size: 1.2em; margin: 1.5rem 0 0.5rem; letter-spacing: -0.01em; }
+h1, h2, h3 { font-weight: var(--heading-weight-large); }
 h4, h5, h6 { font-size: 1em; margin: 1.25rem 0 0.5rem; }
 
 /* Links */
@@ -514,6 +519,7 @@ footer {
 .latest .section-label { margin: 0 0 1rem; }
 .latest-title {
   font-size: 1.35em;
+  font-weight: var(--heading-weight-large);
   margin: 0 0 0.35rem;
   letter-spacing: -0.015em;
 }
