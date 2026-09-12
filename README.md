@@ -1,8 +1,8 @@
 # rustoki
 
 A small, opinionated static site generator written in Rust. Markdown in,
-static HTML out—with syntax highlighting, LaTeX math, figures, sidenotes, a
-bibliography system, and a [Flexoki](https://github.com/kepano/flexoki)-[themed](https://stephango.com/about#colophon) default look baked in.
+static HTML out—with syntax highlighting, LaTeX math, figures, algorithm
+listings, sidenotes, a bibliography system, and a [Flexoki](https://github.com/kepano/flexoki)-[themed](https://stephango.com/about#colophon) default look baked in.
 
 Built to power a single personal blog; extracted here so the generator can be
 installed and reused independently of that blog's content.
@@ -98,6 +98,35 @@ the mark becomes a toggle and the note opens inline — a checkbox does the
 work, so there is no script and no `#fragment` to scroll the page. A note is
 ordinary content and can hold math, links or a citation of its own; it cannot
 hold a block element such as display math or a code block.
+
+Algorithms need no configuration either. A fenced block tagged `algorithm`
+is set as a numbered pseudocode listing in the manner of LaTeX's
+`algorithmic` package:
+
+````markdown
+```algorithm
+title: Vanilla policy gradient
+label: alg:reinforce
+---
+Input: policy $\pi_\theta$, learning rate $\alpha$
+for iteration $= 0, 1, 2, \dots, N$ do
+    Collect trajectories $\mathcal{D}$ by sampling from $\pi_\theta$
+    $\theta \leftarrow \theta + \alpha \hat{g}$ // gradient step
+end for
+```
+````
+
+The header above the `---` line is optional (`title` and `label` are the
+only keys). Below it, one statement per line, indented to nest. Every line is
+ordinary inline Markdown, rendered by the same pipeline as the prose, so
+`$…$` math, code spans, emphasis and `\cite{}` all work inside a statement.
+The build adds the structure: line numbers, bold keywords (`for … do`,
+`while … do`, `if … then`, `else`, `end for`, `repeat … until`, `return`,
+and `in`/`to` inside a loop head), a small-caps name after `function` /
+`procedure`, `// comments`, and unnumbered `Input:` / `Output:` /
+`Require:` / `Ensure:` lines. Blocks are numbered in document order and
+`\algref{alg:reinforce}` anywhere in the post renders as a link reading
+"Algorithm 1".
 
 Templates and CSS are compiled into the binary (`include_str!`) — there's no
 runtime template loading or per-site theming. If you want a different look,

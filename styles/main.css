@@ -623,6 +623,70 @@ math, .math.display, .math.inline { color: var(--tx); }
   font-variant-numeric: tabular-nums;
 }
 
+/* Algorithms (```algorithm fences, see src/render/algorithm.rs). Set like a
+   LaTeX algorithm float rather than a code block: prose face, a rule above
+   and below, the caption between the top rule and a lighter one, numbered
+   lines with a hanging indent so a wrapped statement stays inside its
+   number's column. Each line is a two-column grid, number then statement,
+   and the statement is its own scroll container: a formula wider than a
+   phone scrolls on its own line, the way a display equation does, while
+   the numbers and every other line stay put. Nesting is one custom
+   property per line, so depth costs no nested markup and a ragged indent
+   cannot break the list. */
+.algorithm {
+  margin: 1.75rem 0;
+  border-top: 1px solid var(--tx-3);
+  border-bottom: 1px solid var(--tx-3);
+  scroll-margin-top: 1.5rem;
+}
+.algorithm figcaption {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--ui);
+  font-size: var(--font-small);
+  line-height: 1.5;
+}
+.alg-number { font-weight: var(--heading-weight); }
+.alg-body {
+  list-style: none;
+  counter-reset: alg-line;
+  margin: 0;
+  padding: 0.6rem 0 0.7rem;
+  font-size: 0.95em;
+  line-height: 1.6;
+}
+.alg-body li {
+  counter-increment: alg-line;
+  display: grid;
+  grid-template-columns: 1.6em minmax(0, 1fr);
+  column-gap: 0.8em;
+  margin: 0.1em 0;
+}
+.alg-body li::before {
+  content: counter(alg-line);
+  text-align: right;
+  color: var(--tx-3);
+  font-size: var(--font-smaller);
+  /* Keep the smaller digit on the statement's first baseline. */
+  line-height: calc(1.6 / 0.8);
+  font-variant-numeric: tabular-nums;
+}
+/* Input/Output lines and blank spacers take no number, but keep the
+   column so their text lines up with the numbered statements. */
+.alg-body .alg-head,
+.alg-body .alg-gap { counter-increment: none; }
+.alg-body .alg-head::before,
+.alg-body .alg-gap::before { content: ""; }
+.alg-body .alg-gap { height: 0.5em; margin: 0; }
+.alg-stmt {
+  display: block;
+  padding-left: calc(var(--depth, 0) * 1.5em);
+  overflow-x: auto;
+}
+.alg-kw { font-weight: var(--heading-weight); }
+.alg-name { font-variant: small-caps; letter-spacing: 0.02em; }
+.alg-comment { color: var(--tx-2); }
+.alg-body .math.display { margin: 0.25em 0; }
+
 /* Lists, blockquote, hr, img */
 blockquote {
   border-left: 3px solid var(--ui);
