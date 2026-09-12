@@ -40,7 +40,15 @@ cargo test render::   # filter by path prefix, e.g. render:: or templates::
 cargo install --path . --locked
 ```
 
-There is no lint/format CI step defined in this repo beyond `cargo test`; use `cargo fmt`/`cargo clippy` as normal Rust hygiene if touching code.
+There is no CI in this repo; the checks are run locally. Before committing code, run all three and expect each to be clean:
+
+```sh
+cargo fmt                    # rewrite to standard layout (cargo fmt -- --check to only verify)
+cargo clippy --all-targets   # must report zero warnings; --all-targets covers the tests too
+cargo test
+```
+
+The crate is fully formatted and clippy-clean as of v0.4.0. A lint that is wrong for a specific site gets a scoped `#[allow(clippy::…)]` with a comment saying why (see `beat` in `src/margin/routine.rs`), never a crate-wide allow. Both tools install with `rustup component add rustfmt clippy`.
 
 ## Releasing a version bump
 

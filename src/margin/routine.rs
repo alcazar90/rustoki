@@ -47,6 +47,9 @@ pub fn total_ms(r: &Routine) -> u32 {
     r.beats.iter().map(|b| b.ms).sum()
 }
 
+// One positional argument per `Beat` field, so the choreography tables below
+// read as one row per beat; a builder would bury the timing in method calls.
+#[allow(clippy::too_many_arguments)]
 const fn beat(
     name: &'static str,
     ms: u32,

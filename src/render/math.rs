@@ -176,10 +176,9 @@ fn fix_display_math_newlines(body: &str) -> String {
 
         // Strip trailing \\  (possibly followed only by whitespace).
         let trimmed = inner.trim_end();
-        let (s, stripped_newline) = if trimmed.ends_with("\\\\") {
-            (trimmed[..trimmed.len() - 2].trim_end(), true)
-        } else {
-            (trimmed, false)
+        let (s, stripped_newline) = match trimmed.strip_suffix("\\\\") {
+            Some(s) => (s.trim_end(), true),
+            None => (trimmed, false),
         };
 
         if has_top_level_double_backslash(s) {

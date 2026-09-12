@@ -215,11 +215,11 @@ url = "U"
 author = "A"
 description = "D"
 "#;
-        let config = Config::load(&write_temp(base)).unwrap();
+        let config = Config::load(write_temp(base)).unwrap();
         assert!(config.garden, "garden should default to on");
 
         let off = format!("{base}\ngarden = false\n");
-        let config = Config::load(&write_temp(&off)).unwrap();
+        let config = Config::load(write_temp(&off)).unwrap();
         assert!(!config.garden);
     }
 

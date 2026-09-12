@@ -356,7 +356,7 @@ fn build_toc_html(toc: &[TocEntry]) -> String {
         let text = html_escape(&entry.text);
 
         // Close any open layers that are deeper than the current heading.
-        while stack.last().copied().map_or(false, |top| level < top) {
+        while stack.last().copied().is_some_and(|top| level < top) {
             html.push_str("</li>\n</ul>\n");
             stack.pop();
         }
