@@ -32,6 +32,52 @@ $$
 \int_0^1 x^2 \, dx = \frac{1}{3}
 $$
 
+## Algorithms
+
+A fenced block tagged `algorithm` is set as a numbered pseudocode listing,
+the way LaTeX's `algorithmic` package would. One statement per line, indented
+to nest; keywords such as `for … do`, `if … then`, `end for` and `return` are
+picked out on their own, and every line is ordinary inline Markdown, so math
+goes in `$…$` exactly as it does in the prose. Later text can point back at
+it with `\algref{alg:reinforce}`, which renders as \algref{alg:reinforce}.
+
+```algorithm
+title: Vanilla policy gradient, aka REINFORCE
+label: alg:reinforce
+---
+Input: a parameterised policy $\pi_\theta$, learning rate $\alpha$
+Output: the trained policy $\pi_\theta$
+for iteration $= 0, 1, 2, \dots, N$ do
+    Collect a set of trajectories $\mathcal{D}^{\pi_\theta} = \{\tau^{(i)}\}$ by sampling from the current policy $\pi_\theta$
+    Calculate the return $R(\tau)$ for each trajectory $\tau \in \mathcal{D}^{\pi_\theta}$
+    $\hat{g} \leftarrow \frac{1}{|\mathcal{D}^{\pi_\theta}|} \sum_{\tau \in \mathcal{D}^{\pi_\theta}} \sum_{t=0}^{T-1} \nabla_\theta \log \pi_\theta(a_t \mid s_t) \, R(\tau)$ // policy gradient estimate
+    $\theta \leftarrow \theta + \alpha \hat{g}$
+end for
+return $\pi_\theta$
+```
+
+A `function` line sets its name in small caps, and `Input:`/`Output:` lines
+carry no line number, just as `\Require`/`\Ensure` do not:
+
+```algorithm
+title: Binary search
+---
+function BinarySearch($A[1..n]$, $x$)
+    $\ell \leftarrow 1$, $r \leftarrow n$
+    while $\ell \le r$ do
+        $m \leftarrow \lfloor (\ell + r) / 2 \rfloor$
+        if $A[m] = x$ then
+            return $m$
+        else if $A[m] < x$ then
+            $\ell \leftarrow m + 1$
+        else
+            $r \leftarrow m - 1$
+        end if
+    end while
+    return not found
+end function
+```
+
 ## Citations
 
 Claims can cite a bibliography sidecar file inline \citep{knuth1984}, and the

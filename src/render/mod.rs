@@ -3,6 +3,8 @@
 //! Walks the `pulldown_cmark` event stream and intercepts:
 //!   - headings → add `id=` anchors; collect TOC entries
 //!   - fenced code blocks → `render::code::highlight` (syntect, class-based)
+//!   - ```` ```algorithm ```` fences → `render::algorithm` (numbered pseudocode
+//!     listings whose lines are rendered by this same pipeline)
 //!   - inline / display math → `render::math::inline|display` (pulldown-latex → MathML)
 //!   - image tags with relative URLs → rewrite to `/posts/<slug>/<filename>`
 //!
@@ -23,6 +25,7 @@
 //! math conversion fall back to a `<code>` block with the raw source rather
 //! than panicking — a broken equation must not break the build.
 
+pub mod algorithm;
 pub mod bibliography;
 pub mod code;
 pub mod figure;
@@ -75,12 +78,7 @@ pub fn render(
     let (body_with_cites, ordered_keys) = bibliography::preprocess_citations(body_stripped, &bib);
 
     // --- markdown → HTML ---
-    let mut options = Options::empty();
-    options.insert(Options::ENABLE_TABLES);
-    options.insert(Options::ENABLE_FOOTNOTES);
-    options.insert(Options::ENABLE_STRIKETHROUGH);
-    options.insert(Options::ENABLE_TASKLISTS);
-    options.insert(Options::ENABLE_MATH);
+    let options = markdown_options();
 
     // --- footnotes: rewrite `\footnote{…}` into CommonMark footnote syntax
     // so it and hand-written `[^key]` notes share one code path from here on.
@@ -115,7 +113,15 @@ pub fn render(
     let parser = Parser::new_ext(&preprocessed, options);
     let mut toc: Vec<TocEntry> = Vec::new();
     let mut footnotes = footnote::Footnotes::default();
-    let events = transform_events(parser, &source.slug, &mut toc, &eq_labels, &mut footnotes);
+    let mut algorithms = algorithm::Algorithms::default();
+    let events = transform_events(
+        parser,
+        &source.slug,
+        &mut toc,
+        &eq_labels,
+        &mut footnotes,
+        &mut algorithms,
+    );
 
     let mut html = String::new();
     pulldown_cmark::html::push_html(&mut html, events.into_iter());
@@ -123,7 +129,13 @@ pub fn render(
     // --- footnotes: fill in the placeholders left at each reference site.
     // Deferred to here because pulldown-cmark reaches a note's definition
     // only after every reference to it.
-    let mut html = footnote::splice(&html, &footnotes);
+    let html = footnote::splice(&html, &footnotes);
+
+    // --- algorithms: link `\algref{key}` to its numbered block. After the
+    // footnote splice so a reference inside a note is resolved too, and
+    // over the HTML rather than the source so the numbers are the ones the
+    // walk above actually handed out.
+    let mut html = algorithm::replace_algrefs(&html, algorithms.labels());
 
     // --- append bibliography section ---
     let bib_html = bibliography::render_bibliography_html(&bib, &ordered_keys);
@@ -171,6 +183,7 @@ fn transform_events<'a, I>(
     toc: &mut Vec<TocEntry>,
     eq_labels: &HashMap<String, u32>,
     footnotes: &mut footnote::Footnotes,
+    algorithms: &mut algorithm::Algorithms,
 ) -> Vec<Event<'a>>
 where
     I: Iterator<Item = Event<'a>>,
@@ -228,7 +241,18 @@ where
                         _ => {}
                     }
                 }
-                let html = code::highlight(&buf, &lang);
+                let html = if algorithm::is_fence(&lang) {
+                    // Each statement is rendered by the same inline pipeline
+                    // as a paragraph, so math, code spans and citations in a
+                    // line come out exactly as they would in the prose.
+                    let block = algorithm::parse(&buf);
+                    let number = algorithms.assign(block.label.as_deref());
+                    algorithm::render(&block, number, &mut |md: &str| {
+                        render_inline_markdown(md, slug, eq_labels, footnotes, algorithms)
+                    })
+                } else {
+                    code::highlight(&buf, &lang)
+                };
                 out.push(Event::Html(CowStr::from(html)));
             }
             Event::Start(Tag::CodeBlock(CodeBlockKind::Indented)) => {
@@ -307,6 +331,7 @@ where
                     &mut nested_toc,
                     eq_labels,
                     footnotes,
+                    algorithms,
                 );
                 let mut body = String::new();
                 pulldown_cmark::html::push_html(&mut body, rendered.into_iter());
@@ -338,6 +363,52 @@ where
     }
 
     out
+}
+
+/// The parser extensions every markdown parse in this module enables.
+fn markdown_options() -> Options {
+    let mut options = Options::empty();
+    options.insert(Options::ENABLE_TABLES);
+    options.insert(Options::ENABLE_FOOTNOTES);
+    options.insert(Options::ENABLE_STRIKETHROUGH);
+    options.insert(Options::ENABLE_TASKLISTS);
+    options.insert(Options::ENABLE_MATH);
+    options
+}
+
+/// Render a single line of markdown as inline HTML, with no `<p>` around
+/// it, by the same rules as the prose. This is what an algorithm statement
+/// goes through (see `render::algorithm`).
+fn render_inline_markdown(
+    md: &str,
+    slug: &str,
+    eq_labels: &HashMap<String, u32>,
+    footnotes: &mut footnote::Footnotes,
+    algorithms: &mut algorithm::Algorithms,
+) -> String {
+    let parser = Parser::new_ext(md, markdown_options());
+    // A statement holds no heading; anything that parses as one must not
+    // reach the post's TOC.
+    let mut nested_toc: Vec<TocEntry> = Vec::new();
+    let events = transform_events(
+        parser,
+        slug,
+        &mut nested_toc,
+        eq_labels,
+        footnotes,
+        algorithms,
+    );
+    let mut html = String::new();
+    pulldown_cmark::html::push_html(
+        &mut html,
+        events.into_iter().filter(|e| {
+            !matches!(
+                e,
+                Event::Start(Tag::Paragraph) | Event::End(TagEnd::Paragraph)
+            )
+        }),
+    );
+    html.trim_end().to_string()
 }
 
 // ── TOC helpers ──────────────────────────────────────────────────────────────
@@ -538,6 +609,167 @@ mod tests {
             "expected figref link; got: {}",
             out.html
         );
+    }
+
+    #[test]
+    fn algorithm_fence_renders_a_numbered_listing_with_mathml() {
+        let md = "Intro.\n\n\
+                  ```algorithm\n\
+                  title: Sum of $n$ terms\n\
+                  label: alg:sum\n\
+                  ---\n\
+                  Input: $n$\n\
+                  for $i = 1$ to $n$ do\n\
+                  \x20   $s \\leftarrow s + i$ // accumulate\n\
+                  end for\n\
+                  return $s$\n\
+                  ```\n\n\
+                  As \\algref{alg:sum} shows.\n";
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
+        let html = &out.html;
+        assert!(
+            html.contains(r#"<figure class="algorithm" id="alg:sum">"#),
+            "got: {html}"
+        );
+        assert!(
+            html.contains(
+                r#"<span class="alg-number">Algorithm 1</span> <span class="alg-title">Sum of <span class="math inline">"#
+            ),
+            "caption should carry number and rendered title math; got: {html}"
+        );
+        assert!(
+            html.contains(
+                r#"<li style="--depth:1"><span class="alg-stmt"><span class="math inline">"#
+            ),
+            "indented statement should open with MathML; got: {html}"
+        );
+        assert!(
+            html.contains(r#"<span class="alg-comment">▷ accumulate</span>"#),
+            "got: {html}"
+        );
+        assert!(
+            html.contains(r#"<span class="alg-kw">for</span>"#)
+                && html.contains(r#"<span class="alg-kw">to</span>"#)
+                && html.contains(r#"<span class="alg-kw">do</span>"#),
+            "got: {html}"
+        );
+        assert!(
+            html.contains(r##"As <a href="#alg:sum">Algorithm 1</a> shows."##),
+            "got: {html}"
+        );
+        assert!(
+            !html.contains("<pre>"),
+            "must not fall through to a code block: {html}"
+        );
+        assert!(!html.contains('$'), "literal $ leaked through: {html}");
+    }
+
+    #[test]
+    fn algorithm_blocks_number_in_document_order() {
+        let md = "```algorithm\nlabel: a\n---\nreturn\n```\n\n\
+                  ```algorithm\nreturn\n```\n\n\
+                  ```algorithm\nlabel: c\n---\nreturn\n```\n\n\
+                  \\algref{c} then \\algref{a}, and \\algref{missing}.\n";
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
+        let html = &out.html;
+        assert!(
+            html.contains("Algorithm 1</span></figcaption>"),
+            "got: {html}"
+        );
+        assert!(
+            html.contains("Algorithm 2</span></figcaption>"),
+            "got: {html}"
+        );
+        assert!(
+            html.contains("Algorithm 3</span></figcaption>"),
+            "got: {html}"
+        );
+        assert!(
+            html.contains(r##"<a href="#c">Algorithm 3</a> then <a href="#a">Algorithm 1</a>, and [?:missing]."##),
+            "got: {html}"
+        );
+    }
+
+    #[test]
+    fn algorithm_statement_never_becomes_a_block_element() {
+        // Lines that would open a list, heading or quote in a paragraph
+        // context must stay literal statements.
+        let md = "```algorithm\ntitle: 1. Setup\n---\n\
+                  1. first step\n# not a heading\n- not an item\n> not a quote\n```\n";
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
+        let html = &out.html;
+        assert!(
+            html.contains("<span class=\"alg-title\">1. Setup</span></figcaption>"),
+            "got: {html}"
+        );
+        assert!(html.contains("1. first step</span>"), "got: {html}");
+        assert!(html.contains("# not a heading</span>"), "got: {html}");
+        assert!(html.contains("- not an item</span>"), "got: {html}");
+        assert!(html.contains("&gt; not a quote</span>"), "got: {html}");
+        assert!(!html.contains("<h1"), "got: {html}");
+        assert!(
+            !html.contains("<ul>") && !html.contains("<ol>\n<li>"),
+            "got: {html}"
+        );
+        assert!(!html.contains("<blockquote>"), "got: {html}");
+        assert!(out.toc_html.is_empty());
+    }
+
+    #[test]
+    fn algorithm_statement_cannot_open_an_html_tag() {
+        let md = "```algorithm\nif a<b and c>d then\n```\n";
+        let out = render(
+            &make_source(md, "post"),
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
+        assert!(out.html.contains("a&lt;b and c&gt;d"), "got: {}", out.html);
+        assert!(!out.html.contains("<b "), "got: {}", out.html);
+    }
+
+    #[test]
+    fn citation_inside_an_algorithm_statement_is_linked() {
+        let dir = std::env::temp_dir().join(format!("rustoki-alg-cite-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let post = dir.join("post.md");
+        std::fs::write(
+            dir.join("post.refs.yaml"),
+            "adam:\n  author: \"Kingma, D.\"\n  title: \"Adam\"\n  year: 2015\n",
+        )
+        .unwrap();
+        let md = "```algorithm\nUpdate $\\theta$ with Adam \\cite{adam}\n```\n";
+        let mut source = make_source(md, "post");
+        source.path = post;
+        let out = render(
+            &source,
+            &assets::ImageManifest::default(),
+            "https://alkzar.cl",
+        )
+        .unwrap();
+        std::fs::remove_dir_all(&dir).ok();
+        assert!(
+            out.html
+                .contains(r##"<sup><a href="#ref-adam" class="cite">[1]</a></sup></span></li>"##),
+            "got: {}",
+            out.html
+        );
+        assert!(out.html.contains(r#"<section class="references">"#));
     }
 
     #[test]
